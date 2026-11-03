@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Windows Event ID 5145: Share object access check | OpsVantage Tools</title>
+<meta name="description" content="What Event ID 5145 (share object access check) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.">
+<link rel="canonical" href="https://tools.opsvantage.net/events/5145/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../../assets/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Windows Event ID 5145: Share object access check">
+<meta property="og:description" content="What Event ID 5145 (share object access check) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.">
+<meta property="og:url" content="https://tools.opsvantage.net/events/5145/">
+<script src="../../assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/hub.css">
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Windows Event ID 5145: Share object access check",
+    "description": "What Event ID 5145 (share object access check) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.",
+    "url": "https://tools.opsvantage.net/events/5145/",
+    "dateModified": "2026-11-03",
+    "inLanguage": "en",
+    "author": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "How do I enable Event ID 5145?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Advanced Audit Policy > Object Access > Audit Detailed File Share. Expect a large volume; test it on a few servers and check your log size first."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Why do I see 5145 events for files nobody opened?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Explorer and many programs check access to files and folders while browsing. A check is not the same as reading the file."
+        }
+      }
+    ]
+  }
+]
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../../"><img src="../../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../../#tools">Tools</a>
+      <a class="link opt" href="../../guides/">Guides</a>
+      <a class="link opt" href="../../events/">Event IDs</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <article class="article">
+    <div class="tool-head">
+      <div class="crumbs"><a href="../../">Tools</a> / <a href="../">Event IDs</a> / Event ID 5145</div>
+      <h1>Event ID 5145: <em>share object access check</em></h1>
+      <p class="lead">What Event ID 5145 (share object access check) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.</p>
+      <div class="meta-line">Log: Security · Severity: Informational · MITRE ATT&amp;CK <a href="https://attack.mitre.org/techniques/T1021/002/" rel="noopener">T1021.002</a> · Updated 2026-11-03</div>
+    </div>
+<p>Event ID 5145 is the detailed version of 5140: it records each file or named pipe accessed through a share. That makes it very noisy, and many organisations enable it only on domain controllers and key servers. Where you have it, the Relative Target Name field shows exactly what a remote tool touched, which turns a vague &quot;someone used ADMIN$&quot; into &quot;someone copied PSEXESVC.exe&quot;.</p>
+
+<h2>The fields that matter</h2>
+<div class="table-wrap"><table>
+  <tr><th>Field</th><th>What it tells you</th></tr>
+  <tr><td>Share Name</td><td>The share used, such as <code>\\*\ADMIN$</code> or <code>\\*\IPC$</code>.</td></tr>
+  <tr><td>Relative Target Name</td><td>The file or pipe inside the share. For IPC$ this is the named pipe.</td></tr>
+  <tr><td>Source Address / Account Name</td><td>Where it came from and who did it.</td></tr>
+  <tr><td>Accesses</td><td>What was requested, for example <code>WriteData (or AddFile)</code>.</td></tr>
+  <tr><td>Access Check Results</td><td>Whether the access was granted.</td></tr>
+</table></div>
+
+<h2>What is normal</h2>
+<p>Users reading and writing files on departmental shares, and domain machines reading Group Policy files from SYSVOL.</p>
+
+<h2>When Event ID 5145 is suspicious</h2>
+<ul>
+  <li>A write to ADMIN$ of an <code>.exe</code> (PsExec copies <code>PSEXESVC.exe</code> this way).</li>
+  <li>IPC$ with pipe <code>svcctl</code>: a remote service is being created.</li>
+  <li>IPC$ with <code>atsvc</code>: a remote scheduled task. With <code>winreg</code>: remote registry access.</li>
+  <li>IPC$ with <code>samr</code>, <code>lsarpc</code> or <code>srvsvc</code> from one workstation to many hosts: account and session enumeration.</li>
+  <li>One account writing or renaming large numbers of files across shares in minutes: ransomware.</li>
+</ul>
+<div class="callout"><p><strong>Common false positive:</strong> Endpoint management and backup tools use svcctl and admin shares legitimately. So do domain controllers among themselves.</p></div>
+
+<h2>Find Event ID 5145 with PowerShell</h2>
+<pre><code>Get-WinEvent -FilterHashtable @{LogName='Security'; Id=5145; StartTime=(Get-Date).AddDays(-7)} -MaxEvents 50 |
+  ForEach-Object {
+    $d = [ordered]@{ Time = $_.TimeCreated; Computer = $_.MachineName }
+    ([xml]$_.ToXml()).Event.EventData.Data | ForEach-Object { $d[$_.Name] = $_.'#text' }
+    [pscustomobject]$d
+  } | Format-List</code></pre>
+<h3>Microsoft Sentinel (KQL)</h3>
+<pre><code>SecurityEvent
+| where TimeGenerated &gt; ago(7d) and EventID == 5145
+| project TimeGenerated, Computer, Account, Activity, EventData
+| order by TimeGenerated desc</code></pre>
+
+<h2>Related events</h2>
+<ul>
+<li><a href="../5140/">Event ID 5140</a>: Network share accessed</li>
+<li><a href="../4697/">Event ID 4697</a>: Service installed</li>
+<li><a href="../system-7045/">System Event ID 7045</a>: New service installed</li>
+<li><a href="../4698/">Event ID 4698</a>: Scheduled task created</li>
+</ul>
+
+<h2>FAQ</h2>
+<h3>How do I enable Event ID 5145?</h3>
+<p>Advanced Audit Policy &gt; Object Access &gt; Audit Detailed File Share. Expect a large volume; test it on a few servers and check your log size first.</p>
+<h3>Why do I see 5145 events for files nobody opened?</h3>
+<p>Explorer and many programs check access to files and folders while browsing. A check is not the same as reading the file.</p>
+    <div class="next">
+      <div><b>Have an export full of these events?</b><p>Windows Event Triage reads a CSV, EVTX-to-JSON or XML export in your browser and flags brute force, new admins, suspicious services and log clearing.</p></div>
+      <a class="btn btn-primary" href="../../event-triage/">Open Event Triage</a>
+    </div>
+    <div class="next">
+      <div><b>Found an IP, domain or hash in the event?</b><p>IOC Triage, our free browser extension: right-click it for a verdict from 15 threat-intel sources, then copy a ready ticket note.</p></div>
+      <a class="btn btn-ghost" href="https://chromewebstore.google.com/detail/dncgneacahomieionjkaofmfnojlkfmc?utm_source=tools.opsvantage.net&amp;utm_medium=events&amp;utm_campaign=event-5145">Add IOC Triage to Chrome</a>
+    </div>
+  </article>
+</main>
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../../">All tools</a> · <a href="../../guides/">Guides</a> · <a href="../../privacy/">Privacy &amp; terms</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../../assets/hub.js"></script>
+</body>
+</html>

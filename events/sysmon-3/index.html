@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sysmon Event ID 3: network connection | OpsVantage Tools</title>
+<meta name="description" content="What Sysmon Event ID 3 (network connection) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.">
+<link rel="canonical" href="https://tools.opsvantage.net/events/sysmon-3/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../../assets/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Sysmon Event ID 3: network connection">
+<meta property="og:description" content="What Sysmon Event ID 3 (network connection) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.">
+<meta property="og:url" content="https://tools.opsvantage.net/events/sysmon-3/">
+<script src="../../assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/hub.css">
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Sysmon Event ID 3: network connection",
+    "description": "What Sysmon Event ID 3 (network connection) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.",
+    "url": "https://tools.opsvantage.net/events/sysmon-3/",
+    "dateModified": "2026-11-03",
+    "inLanguage": "en",
+    "author": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Why don't I see Sysmon Event ID 3?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Many Sysmon configurations turn network logging off or include only selected processes. Check the NetworkConnect section of your config."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I check a destination IP quickly?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Look it up in AbuseIPDB, GreyNoise and VirusTotal. IOC Triage checks an IP against those and more with a right-click."
+        }
+      }
+    ]
+  }
+]
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../../"><img src="../../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../../#tools">Tools</a>
+      <a class="link opt" href="../../guides/">Guides</a>
+      <a class="link opt" href="../../events/">Event IDs</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <article class="article">
+    <div class="tool-head">
+      <div class="crumbs"><a href="../../">Tools</a> / <a href="../">Event IDs</a> / Sysmon Event ID 3</div>
+      <h1>Sysmon Event ID 3: <em>network connection</em></h1>
+      <p class="lead">What Sysmon Event ID 3 (network connection) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.</p>
+      <div class="meta-line">Log: Microsoft-Windows-Sysmon/Operational · Severity: Informational · MITRE ATT&amp;CK <a href="https://attack.mitre.org/techniques/T1071/" rel="noopener">T1071</a> · Updated 2026-11-03</div>
+    </div>
+<p>Sysmon Event ID 3 records network connections and, crucially, the process that made them. A firewall log tells you a host talked to an IP; Sysmon 3 tells you it was <code>rundll32.exe</code> that did. Because it is noisy, most configurations drop common browsers and system services and keep the rest.</p>
+
+<h2>The fields that matter</h2>
+<div class="table-wrap"><table>
+  <tr><th>Field</th><th>What it tells you</th></tr>
+  <tr><td>Image</td><td>The program that opened the connection.</td></tr>
+  <tr><td>User</td><td>The account it ran as.</td></tr>
+  <tr><td>Initiated</td><td><code>true</code> for an outbound connection, <code>false</code> for inbound.</td></tr>
+  <tr><td>DestinationIp / DestinationHostname / DestinationPort</td><td>Where it went. Check the IP against threat intelligence.</td></tr>
+  <tr><td>SourceIp / SourcePort</td><td>The local side of the connection.</td></tr>
+</table></div>
+
+<h2>What is normal</h2>
+<p>Browsers, update services, Office talking to Microsoft, and agents talking to their own cloud services.</p>
+
+<h2>When Sysmon Event ID 3 is suspicious</h2>
+<ul>
+  <li><code>rundll32.exe</code>, <code>regsvr32.exe</code>, <code>mshta.exe</code>, <code>wscript.exe</code> or <code>notepad.exe</code> connecting to the internet.</li>
+  <li>PowerShell connecting to a raw IP address, or to a domain registered days ago.</li>
+  <li>Office applications connecting to anything other than Microsoft right after a document opened.</li>
+  <li>Regular connections every few seconds or minutes from one process to one destination: beaconing.</li>
+  <li>Outbound connections on 4444, 1337, 8443 or SMB (445) to the internet.</li>
+</ul>
+<div class="callout"><p><strong>Common false positive:</strong> Software updaters and telemetry components run from unusual folders and call out often. Check the signature and destination owner before treating it as beaconing.</p></div>
+
+<h2>Find Sysmon Event ID 3 with PowerShell</h2>
+<pre><code>Get-WinEvent -FilterHashtable @{LogName='Microsoft-Windows-Sysmon/Operational'; Id=3; StartTime=(Get-Date).AddDays(-7)} -MaxEvents 50 |
+  ForEach-Object {
+    $d = [ordered]@{ Time = $_.TimeCreated; Computer = $_.MachineName }
+    ([xml]$_.ToXml()).Event.EventData.Data | ForEach-Object { $d[$_.Name] = $_.'#text' }
+    [pscustomobject]$d
+  } | Format-List</code></pre>
+<h3>Microsoft Sentinel (KQL)</h3>
+<pre><code>Event
+| where TimeGenerated &gt; ago(7d) and Source == &quot;Microsoft-Windows-Sysmon&quot; and EventID == 3
+| project TimeGenerated, Computer, RenderedDescription, EventData
+| order by TimeGenerated desc</code></pre>
+
+<h2>Related events</h2>
+<ul>
+<li><a href="../#ev-sysmon-22">Sysmon Event ID 22</a>: DNS query</li>
+<li><a href="../sysmon-1/">Sysmon Event ID 1</a>: process creation</li>
+<li><a href="../#ev-5156">Event ID 5156</a>: Windows Filtering Platform allowed a connection</li>
+</ul>
+<p>For a full walk-through, read <a href="../../guides/investigate-suspicious-ip/">How to investigate a suspicious IP address</a>.</p>
+
+<h2>FAQ</h2>
+<h3>Why don't I see Sysmon Event ID 3?</h3>
+<p>Many Sysmon configurations turn network logging off or include only selected processes. Check the NetworkConnect section of your config.</p>
+<h3>How do I check a destination IP quickly?</h3>
+<p>Look it up in AbuseIPDB, GreyNoise and VirusTotal. IOC Triage checks an IP against those and more with a right-click.</p>
+    <div class="next">
+      <div><b>Have an export full of these events?</b><p>Windows Event Triage reads a CSV, EVTX-to-JSON or XML export in your browser and flags brute force, new admins, suspicious services and log clearing.</p></div>
+      <a class="btn btn-primary" href="../../event-triage/">Open Event Triage</a>
+    </div>
+    <div class="next">
+      <div><b>Found an IP, domain or hash in the event?</b><p>IOC Triage, our free browser extension: right-click it for a verdict from 15 threat-intel sources, then copy a ready ticket note.</p></div>
+      <a class="btn btn-ghost" href="https://chromewebstore.google.com/detail/dncgneacahomieionjkaofmfnojlkfmc?utm_source=tools.opsvantage.net&amp;utm_medium=events&amp;utm_campaign=event-sysmon-3">Add IOC Triage to Chrome</a>
+    </div>
+  </article>
+</main>
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../../">All tools</a> · <a href="../../guides/">Guides</a> · <a href="../../privacy/">Privacy &amp; terms</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../../assets/hub.js"></script>
+</body>
+</html>

@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to defang URLs, IPs and domains for safe sharing | OpsVantage Tools</title>
+<meta name="description" content="What defanging is, the common styles (hxxp, [.], [@]), when to defang and when not to, and how to defang or refang a whole list in one go.">
+<link rel="canonical" href="https://tools.opsvantage.net/guides/defang-iocs/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../../assets/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="How to defang URLs, IPs and domains for safe sharing">
+<meta property="og:description" content="What defanging is, the common styles (hxxp, [.], [@]), when to defang and when not to, and how to defang or refang a whole list in one go.">
+<meta property="og:url" content="https://tools.opsvantage.net/guides/defang-iocs/">
+<script src="../../assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/hub.css">
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "How to defang URLs, IPs and domains for safe sharing",
+    "description": "What defanging is, the common styles (hxxp, [.], [@]), when to defang and when not to, and how to defang or refang a whole list in one go.",
+    "url": "https://tools.opsvantage.net/guides/defang-iocs/",
+    "datePublished": "2026-11-04",
+    "dateModified": "2026-11-04",
+    "inLanguage": "en",
+    "author": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is a defanged URL completely safe to share?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "It can't be clicked or previewed by accident, which is the point. Someone can still refang it and visit it on purpose, so treat the indicator itself as sensitive if it reveals a client's name or an internal system."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Should I defang IPs as well as URLs?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes, in anything people read. Many apps make IP addresses clickable, and a raw IP in an email can trip your own filters."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Why does my tool not find the indicators in a defanged report?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Many extractors only recognise one style. Use one that understands the common variants ([.], (.), [dot], hxxp), or refang the text first."
+        }
+      }
+    ]
+  }
+]
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../../"><img src="../../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../../#tools">Tools</a>
+      <a class="link opt" href="../../guides/">Guides</a>
+      <a class="link opt" href="../../events/">Event IDs</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <article class="article">
+    <div class="tool-head">
+      <div class="crumbs"><a href="../../">Tools</a> / <a href="../">Guides</a> / Defang URLs and IPs</div>
+      <h1>How to <em>defang URLs, IPs and domains</em> for safe sharing</h1>
+      <p class="lead">What defanging is, the common styles (hxxp, [.], [@]), when to defang and when not to, and how to defang or refang a whole list in one go.</p>
+      <div class="meta-line">Updated 2026-11-04 · 6 min read</div>
+    </div>
+<p>Paste a malicious URL into a ticket, a chat or an email and three things can go wrong. Someone clicks it. The app turns it into a link and fetches it to build a preview, which can tip off the attacker that you're looking. Or your own mail filter blocks the message because it contains a known-bad link. <strong>Defanging</strong> stops all three by changing the indicator just enough that nothing treats it as a live address, while any analyst can still read it.</p>
+
+<h2>What defanging looks like</h2>
+<div class="table-wrap"><table>
+  <tr><th>Indicator</th><th>Live</th><th>Defanged</th></tr>
+  <tr><td>URL</td><td><code>https://login-update.example.com/verify</code></td><td><code>hxxps[://]login-update[.]example[.]com/verify</code></td></tr>
+  <tr><td>Domain</td><td><code>login-update.example.com</code></td><td><code>login-update[.]example[.]com</code></td></tr>
+  <tr><td>IPv4</td><td><code>203.0.113.45</code></td><td><code>203.0.113[.]45</code> or <code>203[.]0[.]113[.]45</code></td></tr>
+  <tr><td>Email</td><td><code>billing@example.com</code></td><td><code>billing[@]example[.]com</code></td></tr>
+</table></div>
+<p>The common conventions are:</p>
+<ul>
+  <li><code>hxxp</code> and <code>hxxps</code> in place of <code>http</code> and <code>https</code>, so the scheme isn't recognised.</li>
+  <li><code>[.]</code> in place of dots. Some teams use <code>(.)</code> or <code>[dot]</code>.</li>
+  <li><code>[://]</code> or <code>[:]</code> around the scheme separator.</li>
+  <li><code>[@]</code> or <code>[at]</code> in email addresses.</li>
+</ul>
+<p>Square brackets are the most widely understood. Whatever you pick, pick one style for the team. Mixed styles are harder to read and break the tools that refang them later.</p>
+
+<h2>What not to defang</h2>
+<ul>
+  <li><strong>File hashes.</strong> A hash isn't clickable, so there's nothing to defang.</li>
+  <li><strong>Block lists and detection rules.</strong> Firewalls, proxies, EDR and SIEM queries need the real value. A defanged entry in a block list blocks nothing.</li>
+  <li><strong>Threat intel platforms.</strong> MISP, OpenCTI and similar store indicators in their live form and handle display safely themselves.</li>
+  <li><strong>Private or internal addresses</strong> in an internal ticket. Defanging them does no harm, but it adds noise.</li>
+</ul>
+
+<h2>Where to defang</h2>
+<p>Anywhere a human reads the indicator and software might act on it: tickets, chat channels, emails to clients, incident reports, shift handovers and slide decks. Link previews in Slack and Teams are the one people forget. The preview service fetches the URL from its own servers, so the attacker's logs show a visit seconds after you paste it.</p>
+
+<h2>Refanging: turning it back</h2>
+<p>When you need to look an indicator up or add it to a block list, you refang it: <code>hxxps</code> back to <code>https</code>, <code>[.]</code> back to a dot. Doing that by hand on a list of 50 is slow and error-prone, and a missed bracket means a lookup that silently returns nothing.</p>
+
+<h2>How to defang a whole list</h2>
+<ul>
+  <li><strong>IOC Extractor (free, in your browser):</strong> paste the alert, email or log. It finds every IP, domain, URL, email and hash, recognises ones that are already defanged, and copies them defanged or refanged. Nothing is uploaded.</li>
+  <li><strong>CyberChef:</strong> the "Defang URL" and "Defang IP Addresses" operations, and "Fang URL" to reverse them.</li>
+  <li><strong>A one-liner</strong> for scripts:</li>
+</ul>
+<pre><code>$ioc = 'https://login-update.example.com/verify'
+$ioc -replace '^http', 'hxxp' -replace '://', '[://]' -replace '\.', '[.]'</code></pre>
+<p>That simple version also brackets dots in the path and query string. That's fine for a ticket, but don't use it to build anything a tool will parse.</p>
+
+<h2>FAQ</h2>
+<h3>Is a defanged URL completely safe to share?</h3>
+<p>It can't be clicked or previewed by accident, which is the point. Someone can still refang it and visit it on purpose, so treat the indicator itself as sensitive if it reveals a client's name or an internal system.</p>
+<h3>Should I defang IPs as well as URLs?</h3>
+<p>Yes, in anything people read. Many apps make IP addresses clickable, and a raw IP in an email can trip your own filters.</p>
+<h3>Why does my tool not find the indicators in a defanged report?</h3>
+<p>Many extractors only recognise one style. Use one that understands the common variants (<code>[.]</code>, <code>(.)</code>, <code>[dot]</code>, <code>hxxp</code>), or refang the text first.</p>
+    <div class="next">
+      <div><b>Defang a whole alert at once</b><p>Paste any text into the IOC Extractor: it finds every IP, domain, URL, email address and hash, and copies them defanged or refanged, one click.</p></div>
+      <a class="btn btn-primary" href="../../ioc-extractor/">Open IOC Extractor</a>
+    </div>
+    <div class="next">
+      <div><b>Copy indicators already defanged</b><p>IOC Triage, our free browser extension, checks any URL, domain, IP or hash against 15 threat-intel sources and copies ticket notes and block lists with the indicators defanged for you.</p></div>
+      <a class="btn btn-ghost" href="https://chromewebstore.google.com/detail/dncgneacahomieionjkaofmfnojlkfmc?utm_source=tools.opsvantage.net&amp;utm_medium=guide&amp;utm_campaign=defang-iocs">Add IOC Triage to Chrome</a>
+    </div>
+  </article>
+</main>
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../../">All tools</a> · <a href="../../guides/">Guides</a> · <a href="../../privacy/">Privacy &amp; terms</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../../assets/hub.js"></script>
+</body>
+</html>

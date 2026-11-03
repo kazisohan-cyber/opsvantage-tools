@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RDP Event ID 1149: RDP authentication succeeded | OpsVantage Tools</title>
+<meta name="description" content="What RDP Event ID 1149 (rdp authentication succeeded) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.">
+<link rel="canonical" href="https://tools.opsvantage.net/events/rdp-1149/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../../assets/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RDP Event ID 1149: RDP authentication succeeded">
+<meta property="og:description" content="What RDP Event ID 1149 (rdp authentication succeeded) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.">
+<meta property="og:url" content="https://tools.opsvantage.net/events/rdp-1149/">
+<script src="../../assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/hub.css">
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "RDP Event ID 1149: RDP authentication succeeded",
+    "description": "What RDP Event ID 1149 (rdp authentication succeeded) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.",
+    "url": "https://tools.opsvantage.net/events/rdp-1149/",
+    "dateModified": "2026-11-03",
+    "inLanguage": "en",
+    "author": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Where is Event ID 1149 logged?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "In Applications and Services Logs > Microsoft > Windows > TerminalServices-RemoteConnectionManager > Operational."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does Event ID 1149 mean the logon succeeded?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "It means the connection authenticated. Confirm the full logon with Security Event ID 4624 logon type 10, or 7 for a reconnected session."
+        }
+      }
+    ]
+  }
+]
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../../"><img src="../../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../../#tools">Tools</a>
+      <a class="link opt" href="../../guides/">Guides</a>
+      <a class="link opt" href="../../events/">Event IDs</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <article class="article">
+    <div class="tool-head">
+      <div class="crumbs"><a href="../../">Tools</a> / <a href="../">Event IDs</a> / RDP Event ID 1149</div>
+      <h1>RDP Event ID 1149: <em>rdp authentication succeeded</em></h1>
+      <p class="lead">What RDP Event ID 1149 (rdp authentication succeeded) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.</p>
+      <div class="meta-line">Log: Microsoft-Windows-TerminalServices-RemoteConnectionManager/Operational · Severity: Informational · MITRE ATT&amp;CK <a href="https://attack.mitre.org/techniques/T1021/001/" rel="noopener">T1021.001</a> · Updated 2026-11-03</div>
+    </div>
+<p>Event ID 1149 in the RemoteConnectionManager log is written when a Remote Desktop connection passes authentication. It is often the quickest way to answer &quot;who RDPed into this server and from where&quot;, because it lists the user and the source address on one line. It does not by itself prove a full session started: that is 4624 with logon type 10 (or 7 for a reconnect) in the Security log.</p>
+
+<h2>The fields that matter</h2>
+<div class="table-wrap"><table>
+  <tr><th>Field</th><th>What it tells you</th></tr>
+  <tr><td>User</td><td>The account name that authenticated.</td></tr>
+  <tr><td>Domain</td><td>The account's domain, or the computer name for a local account.</td></tr>
+  <tr><td>Source Network Address</td><td>Where the connection came from.</td></tr>
+</table></div>
+
+<h2>What is normal</h2>
+<p>Admins connecting to servers from their jump host or VPN range during working hours.</p>
+
+<h2>When RDP Event ID 1149 is suspicious</h2>
+<ul>
+  <li>A public IP address as the source: RDP is exposed to the internet.</li>
+  <li>RDP into a workstation, or from one workstation to another, where your admins only ever use jump hosts.</li>
+  <li>An account that has never used RDP, or a service account.</li>
+  <li>A 1149 right after a run of 4625 failures for the same account.</li>
+  <li>Connections at hours when nobody in the team works.</li>
+</ul>
+<div class="callout"><p><strong>Common false positive:</strong> Vendors and MSPs connecting from their own offices show up with unfamiliar public IPs. Keep a list of approved sources and check the IP owner.</p></div>
+
+<h2>Find RDP Event ID 1149 with PowerShell</h2>
+<pre><code>Get-WinEvent -FilterHashtable @{LogName='Microsoft-Windows-TerminalServices-RemoteConnectionManager/Operational'; Id=1149; StartTime=(Get-Date).AddDays(-7)} -MaxEvents 50 |
+  ForEach-Object {
+    $d = [ordered]@{ Time = $_.TimeCreated; Computer = $_.MachineName }
+    ([xml]$_.ToXml()).Event.EventData.Data | ForEach-Object { $d[$_.Name] = $_.'#text' }
+    [pscustomobject]$d
+  } | Format-List</code></pre>
+<h3>Microsoft Sentinel (KQL)</h3>
+<pre><code>Event
+| where TimeGenerated &gt; ago(7d) and EventLog == &quot;Microsoft-Windows-TerminalServices-RemoteConnectionManager/Operational&quot; and EventID == 1149
+| project TimeGenerated, Computer, RenderedDescription, EventData
+| order by TimeGenerated desc</code></pre>
+
+<h2>Related events</h2>
+<ul>
+<li><a href="../4624/">Event ID 4624</a>: Successful logon</li>
+<li><a href="../4625/">Event ID 4625</a>: Failed logon</li>
+<li><a href="../#ev-rdp-21">RDP Event ID 21</a>: RDP session logon succeeded</li>
+<li>Event ID 4778</li>
+</ul>
+<p>For a full walk-through, read <a href="../../guides/windows-logon-types/">Windows logon types explained</a>.</p>
+
+<h2>FAQ</h2>
+<h3>Where is Event ID 1149 logged?</h3>
+<p>In Applications and Services Logs &gt; Microsoft &gt; Windows &gt; TerminalServices-RemoteConnectionManager &gt; Operational.</p>
+<h3>Does Event ID 1149 mean the logon succeeded?</h3>
+<p>It means the connection authenticated. Confirm the full logon with Security Event ID 4624 logon type 10, or 7 for a reconnected session.</p>
+    <div class="next">
+      <div><b>Have an export full of these events?</b><p>Windows Event Triage reads a CSV, EVTX-to-JSON or XML export in your browser and flags brute force, new admins, suspicious services and log clearing.</p></div>
+      <a class="btn btn-primary" href="../../event-triage/">Open Event Triage</a>
+    </div>
+    <div class="next">
+      <div><b>Found an IP, domain or hash in the event?</b><p>IOC Triage, our free browser extension: right-click it for a verdict from 15 threat-intel sources, then copy a ready ticket note.</p></div>
+      <a class="btn btn-ghost" href="https://chromewebstore.google.com/detail/dncgneacahomieionjkaofmfnojlkfmc?utm_source=tools.opsvantage.net&amp;utm_medium=events&amp;utm_campaign=event-rdp-1149">Add IOC Triage to Chrome</a>
+    </div>
+  </article>
+</main>
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../../">All tools</a> · <a href="../../guides/">Guides</a> · <a href="../../privacy/">Privacy &amp; terms</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../../assets/hub.js"></script>
+</body>
+</html>

