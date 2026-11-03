@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Windows Event ID 4624: Successful logon | OpsVantage Tools</title>
+<meta name="description" content="What Event ID 4624 (successful logon) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.">
+<link rel="canonical" href="https://tools.opsvantage.net/events/4624/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../../assets/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Windows Event ID 4624: Successful logon">
+<meta property="og:description" content="What Event ID 4624 (successful logon) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.">
+<meta property="og:url" content="https://tools.opsvantage.net/events/4624/">
+<script src="../../assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/hub.css">
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Windows Event ID 4624: Successful logon",
+    "description": "What Event ID 4624 (successful logon) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.",
+    "url": "https://tools.opsvantage.net/events/4624/",
+    "dateModified": "2026-11-03",
+    "inLanguage": "en",
+    "author": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Why are there so many 4624 events with logon type 3?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Every file share access, Group Policy refresh and many management tools create a network logon. Filter out machine accounts and known servers first; what remains is usually small enough to read."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is logon type 9?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "NewCredentials: a process runs with a second set of credentials for network access only, as runas /netonly does. It is rare in normal use, which makes it a useful signal for pass-the-hash."
+        }
+      }
+    ]
+  }
+]
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../../"><img src="../../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../../#tools">Tools</a>
+      <a class="link opt" href="../../guides/">Guides</a>
+      <a class="link opt" href="../../events/">Event IDs</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <article class="article">
+    <div class="tool-head">
+      <div class="crumbs"><a href="../../">Tools</a> / <a href="../">Event IDs</a> / Event ID 4624</div>
+      <h1>Event ID 4624: <em>successful logon</em></h1>
+      <p class="lead">What Event ID 4624 (successful logon) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.</p>
+      <div class="meta-line">Log: Security · Severity: Informational · MITRE ATT&amp;CK <a href="https://attack.mitre.org/techniques/T1078/" rel="noopener">T1078</a> · Updated 2026-11-03</div>
+    </div>
+<p>Every successful logon on a Windows machine writes Event ID 4624. On a busy server that means thousands an hour, so the skill is not finding 4624s but knowing which few matter. The logon type, the source address and what happened just before are what separate a user opening a file share from an attacker moving between hosts.</p>
+
+<h2>The fields that matter</h2>
+<div class="table-wrap"><table>
+  <tr><th>Field</th><th>What it tells you</th></tr>
+  <tr><td>Logon Type</td><td>How the logon happened: 2 at the keyboard, 3 over the network (file shares, most remote tools), 10 RDP, 9 runas /netonly, 5 service, 4 scheduled task.</td></tr>
+  <tr><td>New Logon &gt; Account Name / Domain</td><td>The account that logged on. Ignore the Subject section, which is usually the local system.</td></tr>
+  <tr><td>Logon ID</td><td>Ties this logon to 4672 (admin rights), 4634 (logoff) and the processes the session started.</td></tr>
+  <tr><td>Source Network Address</td><td>Where the logon came from. <code>-</code> or <code>127.0.0.1</code> means local.</td></tr>
+  <tr><td>Logon Process / Authentication Package</td><td>Kerberos, NTLM or Negotiate. NTLM where you expect Kerberos is worth a second look.</td></tr>
+  <tr><td>Elevated Token</td><td>Yes means the session has full admin rights.</td></tr>
+</table></div>
+
+<h2>What is normal</h2>
+<p>Type 3 logons from file servers and domain controllers, machine accounts (names ending in <code>$</code>), type 5 for services and type 2 or 11 for people at their own laptops.</p>
+
+<h2>When Event ID 4624 is suspicious</h2>
+<ul>
+  <li>Type 10 (RDP) or type 3 from a public IP address: a service is exposed to the internet.</li>
+  <li>A 4624 right after a burst of 4625 failures for the same account: treat the password as compromised.</li>
+  <li>One source logging on with type 3 and NTLM to many hosts in a few minutes: lateral movement.</li>
+  <li>Type 9 with logon process <code>seclogo</code> and package <code>Negotiate</code>: the pattern pass-the-hash tools leave.</li>
+  <li>A service or admin account logging on interactively to a workstation it never uses.</li>
+</ul>
+<div class="callout"><p><strong>Common false positive:</strong> Vulnerability scanners and backup software produce large bursts of type 3 logons from one host. Put their addresses on a list before you alert on volume.</p></div>
+
+<h2>Find Event ID 4624 with PowerShell</h2>
+<pre><code>Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4624; StartTime=(Get-Date).AddDays(-7)} -MaxEvents 50 |
+  ForEach-Object {
+    $d = [ordered]@{ Time = $_.TimeCreated; Computer = $_.MachineName }
+    ([xml]$_.ToXml()).Event.EventData.Data | ForEach-Object { $d[$_.Name] = $_.'#text' }
+    [pscustomobject]$d
+  } | Format-List</code></pre>
+<h3>Microsoft Sentinel (KQL)</h3>
+<pre><code>SecurityEvent
+| where TimeGenerated &gt; ago(7d) and EventID == 4624
+| project TimeGenerated, Computer, Account, Activity, EventData
+| order by TimeGenerated desc</code></pre>
+
+<h2>Related events</h2>
+<ul>
+<li><a href="../4625/">Event ID 4625</a>: Failed logon</li>
+<li><a href="../4672/">Event ID 4672</a>: Special privileges assigned to new logon</li>
+<li><a href="../4648/">Event ID 4648</a>: Logon with explicit credentials</li>
+<li><a href="../#ev-4634">Event ID 4634</a>: Logoff</li>
+</ul>
+<p>For a full walk-through, read <a href="../../guides/windows-logon-types/">Windows logon types explained</a>.</p>
+
+<h2>FAQ</h2>
+<h3>Why are there so many 4624 events with logon type 3?</h3>
+<p>Every file share access, Group Policy refresh and many management tools create a network logon. Filter out machine accounts and known servers first; what remains is usually small enough to read.</p>
+<h3>What is logon type 9?</h3>
+<p>NewCredentials: a process runs with a second set of credentials for network access only, as <code>runas /netonly</code> does. It is rare in normal use, which makes it a useful signal for pass-the-hash.</p>
+    <div class="next">
+      <div><b>Have an export full of these events?</b><p>Windows Event Triage reads a CSV, EVTX-to-JSON or XML export in your browser and flags brute force, new admins, suspicious services and log clearing.</p></div>
+      <a class="btn btn-primary" href="../../event-triage/">Open Event Triage</a>
+    </div>
+    <div class="next">
+      <div><b>Found an IP, domain or hash in the event?</b><p>IOC Triage, our free browser extension: right-click it for a verdict from 15 threat-intel sources, then copy a ready ticket note.</p></div>
+      <a class="btn btn-ghost" href="https://chromewebstore.google.com/detail/dncgneacahomieionjkaofmfnojlkfmc?utm_source=tools.opsvantage.net&amp;utm_medium=events&amp;utm_campaign=event-4624">Add IOC Triage to Chrome</a>
+    </div>
+  </article>
+</main>
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../../">All tools</a> · <a href="../../guides/">Guides</a> · <a href="../../privacy/">Privacy &amp; terms</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../../assets/hub.js"></script>
+</body>
+</html>

@@ -87,6 +87,7 @@
     <div class="nav-right">
       <a class="link opt" href="../../#tools">Tools</a>
       <a class="link opt" href="../../guides/">Guides</a>
+      <a class="link opt" href="../../events/">Event IDs</a>
       <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
       <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
@@ -106,7 +107,7 @@
 <p>Every successful logon writes 4624 and every failure writes <a href="../event-id-4625/">4625</a>; both carry the same logon type field. This is what each value means and which ones deserve your attention.</p>
 
 <h2>All logon types at a glance</h2>
-<table>
+<div class="table-wrap"><table>
   <tr><th>Type</th><th>Name</th><th>Normal example</th><th>Watch for</th></tr>
   <tr><td><code>0</code></td><td>System</td><td>The computer starting up</td><td>Nothing; only the SYSTEM account</td></tr>
   <tr><td><code>2</code></td><td>Interactive</td><td>User at the keyboard, or Hyper-V/VMware console</td><td>Admin accounts logging on to workstations</td></tr>
@@ -120,7 +121,7 @@
   <tr><td><code>11</code></td><td>CachedInteractive</td><td>Laptop logon without reaching a domain controller</td><td>Mostly normal; useful for travel timelines</td></tr>
   <tr><td><code>12</code></td><td>CachedRemoteInteractive</td><td>RDP using cached credentials (also Microsoft accounts)</td><td>Same checks as type 10</td></tr>
   <tr><td><code>13</code></td><td>CachedUnlock</td><td>Unlock with cached credentials</td><td>Rarely interesting</td></tr>
-</table>
+</table></div>
 
 <h2>The four that matter most in investigations</h2>
 <h3>Type 10: Remote Desktop</h3>

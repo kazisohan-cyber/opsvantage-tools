@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Windows Event ID 4769: Kerberos service ticket requested | OpsVantage Tools</title>
+<meta name="description" content="What Event ID 4769 (kerberos service ticket requested) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.">
+<link rel="canonical" href="https://tools.opsvantage.net/events/4769/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../../assets/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Windows Event ID 4769: Kerberos service ticket requested">
+<meta property="og:description" content="What Event ID 4769 (kerberos service ticket requested) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.">
+<meta property="og:url" content="https://tools.opsvantage.net/events/4769/">
+<script src="../../assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/hub.css">
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Windows Event ID 4769: Kerberos service ticket requested",
+    "description": "What Event ID 4769 (kerberos service ticket requested) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.",
+    "url": "https://tools.opsvantage.net/events/4769/",
+    "dateModified": "2026-11-03",
+    "inLanguage": "en",
+    "author": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "How do I detect Kerberoasting with 4769?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Exclude service names ending in $ and krbtgt, keep encryption type 0x17, and count distinct service names per account in a short window. Five or more is worth a look."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I reduce the risk?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Give service accounts long random passwords or use group managed service accounts, and set them to support AES only."
+        }
+      }
+    ]
+  }
+]
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../../"><img src="../../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../../#tools">Tools</a>
+      <a class="link opt" href="../../guides/">Guides</a>
+      <a class="link opt" href="../../events/">Event IDs</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <article class="article">
+    <div class="tool-head">
+      <div class="crumbs"><a href="../../">Tools</a> / <a href="../">Event IDs</a> / Event ID 4769</div>
+      <h1>Event ID 4769: <em>kerberos service ticket requested</em></h1>
+      <p class="lead">What Event ID 4769 (kerberos service ticket requested) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.</p>
+      <div class="meta-line">Log: Security · Severity: Informational · MITRE ATT&amp;CK <a href="https://attack.mitre.org/techniques/T1558/003/" rel="noopener">T1558.003</a> · Updated 2026-11-03</div>
+    </div>
+<p>Event ID 4769 is logged when a Kerberos service ticket is requested, every time a user reaches a file share, SQL server or other service. It is the event that shows Kerberoasting: one account requesting tickets for many service accounts, usually with weak RC4 encryption, so the passwords can be cracked offline.</p>
+
+<h2>The fields that matter</h2>
+<div class="table-wrap"><table>
+  <tr><th>Field</th><th>What it tells you</th></tr>
+  <tr><td>Account Name</td><td>Who requested the ticket.</td></tr>
+  <tr><td>Service Name</td><td>The service account or computer the ticket is for.</td></tr>
+  <tr><td>Client Address</td><td>Where the request came from.</td></tr>
+  <tr><td>Ticket Encryption Type</td><td><code>0x12</code> AES256, <code>0x17</code> RC4. RC4 tickets are the ones attackers want.</td></tr>
+  <tr><td>Failure Code</td><td><code>0x0</code> success.</td></tr>
+</table></div>
+
+<h2>What is normal</h2>
+<p>Thousands of requests for computer accounts (names ending in <code>$</code>) and for <code>krbtgt</code>, mostly with AES.</p>
+
+<h2>When Event ID 4769 is suspicious</h2>
+<ul>
+  <li>One account requesting tickets for many different user-based service accounts within minutes.</li>
+  <li>RC4 (<code>0x17</code>) tickets for service accounts in an AES-capable domain.</li>
+  <li>Requests for service accounts that are rarely used, from a workstation.</li>
+</ul>
+<div class="callout"><p><strong>Common false positive:</strong> Legacy applications that only support RC4 request RC4 tickets all day. Know them, and move them to AES where you can.</p></div>
+
+<h2>Find Event ID 4769 with PowerShell</h2>
+<pre><code>Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4769; StartTime=(Get-Date).AddDays(-7)} -MaxEvents 50 |
+  ForEach-Object {
+    $d = [ordered]@{ Time = $_.TimeCreated; Computer = $_.MachineName }
+    ([xml]$_.ToXml()).Event.EventData.Data | ForEach-Object { $d[$_.Name] = $_.'#text' }
+    [pscustomobject]$d
+  } | Format-List</code></pre>
+<h3>Microsoft Sentinel (KQL)</h3>
+<pre><code>SecurityEvent
+| where TimeGenerated &gt; ago(7d) and EventID == 4769
+| project TimeGenerated, Computer, Account, Activity, EventData
+| order by TimeGenerated desc</code></pre>
+
+<h2>Related events</h2>
+<ul>
+<li><a href="../4768/">Event ID 4768</a>: Kerberos TGT requested</li>
+<li><a href="../4624/">Event ID 4624</a>: Successful logon</li>
+<li><a href="../4771/">Event ID 4771</a>: Kerberos pre-authentication failed</li>
+</ul>
+
+<h2>FAQ</h2>
+<h3>How do I detect Kerberoasting with 4769?</h3>
+<p>Exclude service names ending in <code>$</code> and <code>krbtgt</code>, keep encryption type <code>0x17</code>, and count distinct service names per account in a short window. Five or more is worth a look.</p>
+<h3>How do I reduce the risk?</h3>
+<p>Give service accounts long random passwords or use group managed service accounts, and set them to support AES only.</p>
+    <div class="next">
+      <div><b>Have an export full of these events?</b><p>Windows Event Triage reads a CSV, EVTX-to-JSON or XML export in your browser and flags brute force, new admins, suspicious services and log clearing.</p></div>
+      <a class="btn btn-primary" href="../../event-triage/">Open Event Triage</a>
+    </div>
+    <div class="next">
+      <div><b>Found an IP, domain or hash in the event?</b><p>IOC Triage, our free browser extension: right-click it for a verdict from 15 threat-intel sources, then copy a ready ticket note.</p></div>
+      <a class="btn btn-ghost" href="https://chromewebstore.google.com/detail/dncgneacahomieionjkaofmfnojlkfmc?utm_source=tools.opsvantage.net&amp;utm_medium=events&amp;utm_campaign=event-4769">Add IOC Triage to Chrome</a>
+    </div>
+  </article>
+</main>
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../../">All tools</a> · <a href="../../guides/">Guides</a> · <a href="../../privacy/">Privacy &amp; terms</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../../assets/hub.js"></script>
+</body>
+</html>

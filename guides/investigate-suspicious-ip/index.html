@@ -87,6 +87,7 @@
     <div class="nav-right">
       <a class="link opt" href="../../#tools">Tools</a>
       <a class="link opt" href="../../guides/">Guides</a>
+      <a class="link opt" href="../../events/">Event IDs</a>
       <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
       <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
@@ -107,13 +108,13 @@
 
 <h2>Step 1: Is it even a public IP?</h2>
 <p>It sounds obvious, but a surprising number of tickets get escalated for addresses that never left the building. Rule these out before any lookup:</p>
-<table>
+<div class="table-wrap"><table>
   <tr><th>Range</th><th>What it is</th></tr>
   <tr><td><code>10.0.0.0/8</code>, <code>172.16.0.0/12</code>, <code>192.168.0.0/16</code></td><td>Private (RFC 1918). It's one of your hosts, or a client's. Look it up in your CMDB or DHCP logs, not on the internet.</td></tr>
   <tr><td><code>100.64.0.0/10</code></td><td>Carrier-grade NAT. Common on mobile and some home ISPs, and on Tailscale. Not unique, so threat intel on it means nothing.</td></tr>
   <tr><td><code>169.254.0.0/16</code></td><td>Link-local. A host that failed to get an address from DHCP.</td></tr>
   <tr><td><code>127.0.0.0/8</code></td><td>Loopback: the machine talking to itself.</td></tr>
-</table>
+</table></div>
 <p>For a private IP, the investigation moves inside: which device had that address at that time, and who was using it.</p>
 
 <h2>Step 2: Who owns the IP? (WHOIS, ASN and hosting)</h2>
@@ -128,14 +129,14 @@
 
 <h2>Step 3: Does it attack other people? (reputation)</h2>
 <p>Now check whether others have seen it misbehave. Use more than one source; each sees a different slice of the internet.</p>
-<table>
+<div class="table-wrap"><table>
   <tr><th>Source</th><th>What it's good for</th><th>Watch out for</th></tr>
   <tr><td><a href="https://www.abuseipdb.com" rel="noopener">AbuseIPDB</a></td><td>Community abuse reports: brute force, scanning, spam. The confidence score and the report categories are both useful.</td><td>A high score on a shared VPN or CGNAT address can be other users' fault.</td></tr>
   <tr><td><a href="https://viz.greynoise.io" rel="noopener">GreyNoise</a></td><td>Tells you if the IP is mass-scanning the whole internet, and whether it's a known benign scanner (Shodan, Censys, research projects).</td><td>"Noise" means untargeted, not harmless. A scanner that found your open RDP is still a problem.</td></tr>
   <tr><td><a href="https://www.virustotal.com" rel="noopener">VirusTotal</a></td><td>Vendor detections, plus the Relations tab: domains that resolved to the IP and files that contacted it.</td><td>Zero detections is common for fresh attacker infrastructure. Absence of evidence isn't a clean bill of health.</td></tr>
   <tr><td><a href="https://www.shodan.io" rel="noopener">Shodan</a></td><td>What the host exposes: open ports, banners, TLS certificates. A box with RDP, an outdated web panel and a self-signed cert looks very different from a CDN edge.</td><td>Data can be days or weeks old.</td></tr>
   <tr><td><a href="https://threatfox.abuse.ch" rel="noopener">ThreatFox</a> and <a href="https://urlhaus.abuse.ch" rel="noopener">URLhaus</a></td><td>Known malware C2 servers and malware download hosts. A hit here is high-confidence.</td><td>Coverage is narrower, so no hit doesn't clear it.</td></tr>
-</table>
+</table></div>
 <div class="callout"><p><strong>Don't let one source decide.</strong> A clean VirusTotal result with 400 AbuseIPDB reports for SSH brute force in the past week is a bad IP. A scary AbuseIPDB score on a Cloudflare or Google address is almost always a false lead: the reports are about sites behind the shared address, not the address itself.</p></div>
 
 <h2>Step 4: Did it touch anything of yours?</h2>
@@ -155,7 +156,7 @@ union isfuzzy=true
 | order by TimeGenerated desc</code></pre>
 
 <h2>Block, monitor or close?</h2>
-<table>
+<div class="table-wrap"><table>
   <tr><th>What you found</th><th>Decision</th></tr>
   <tr><td>Private, CGNAT or your own known infrastructure</td><td>Close the external angle; investigate the internal host if the behaviour is odd.</td></tr>
   <tr><td>Known benign scanner (GreyNoise "benign"), traffic dropped</td><td>Close. Note it so the next analyst doesn't redo the work.</td></tr>
@@ -163,7 +164,7 @@ union isfuzzy=true
   <tr><td>Any successful authentication from a suspicious IP</td><td>Escalate. Reset credentials, revoke sessions, review what the session did.</td></tr>
   <tr><td>Internal host talking to a known C2 address</td><td>Escalate immediately. Isolate the host and preserve evidence.</td></tr>
   <tr><td>Shared CDN or cloud IP with mixed reputation</td><td>Don't block the IP. Investigate the domain or URL instead.</td></tr>
-</table>
+</table></div>
 <p>Whatever you decide, write down the sources you checked and what each one said. "Blocked, AbuseIPDB 100%" won't help the next person. "Hetzner VPS, 312 AbuseIPDB reports for RDP brute force, GreyNoise malicious scanner, 48 failed logons on RDP gateway, no success" will. If you want to read the logon side more closely, see <a href="../event-id-4625/">Event ID 4625: failed logons explained</a> and, for cloud sign-ins, <a href="../m365-impossible-travel/">Microsoft 365 impossible travel</a>.</p>
 
 <h2>FAQ</h2>

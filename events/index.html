@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Windows security event ID cheat sheet | OpsVantage Tools</title>
+<meta name="description" content="The 60 Windows Security, System, Sysmon, PowerShell and Defender event IDs that matter for security monitoring, with severity and what each one means.">
+<link rel="canonical" href="https://tools.opsvantage.net/events/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../assets/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Windows security event ID cheat sheet">
+<meta property="og:description" content="The 60 Windows Security, System, Sysmon, PowerShell and Defender event IDs that matter for security monitoring, with severity and what each one means.">
+<meta property="og:url" content="https://tools.opsvantage.net/events/">
+<script src="../assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/hub.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "Windows security event ID cheat sheet",
+  "url": "https://tools.opsvantage.net/events/"
+}
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../"><img src="../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../#tools">Tools</a>
+      <a class="link opt" href="../guides/">Guides</a>
+      <a class="link opt" href="../events/">Event IDs</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <article class="article">
+    <div class="tool-head">
+      <div class="crumbs"><a href="../">Tools</a> / Event IDs</div>
+      <h1>Windows security event IDs: <em>the cheat sheet</em></h1>
+      <p class="lead">The 60 Windows, Sysmon, PowerShell and Defender event IDs that matter for security monitoring, what each one means and how worried to be. Linked IDs have a full page with fields, false positives and queries.</p>
+      <div class="meta-line">Updated 2026-11-03</div>
+    </div>
+<h2>Logon and accounts (Security log)</h2>
+<div class="table-wrap"><table>
+  <tr><th>ID</th><th>Log</th><th>Event</th><th>Severity</th><th>Why it matters</th></tr>
+  <tr id="ev-4624"><td><a href="4624/">4624</a></td><td>Security</td><td>Successful logon</td><td>Informational</td><td>Baseline of who logged on, from where and how. Logon type tells the story: 2 interactive, 3 network, 10 RDP, 9 new credentials (runas /netonly, also seen with pass-the-hash).</td></tr>
+  <tr id="ev-4625"><td><a href="4625/">4625</a></td><td>Security</td><td>Failed logon</td><td>Low</td><td>Many failures for one account means brute force; one source failing against many accounts means password spraying.</td></tr>
+  <tr id="ev-4634"><td>4634</td><td>Security</td><td>Logoff</td><td>Informational</td><td>Pairs with 4624 via Logon ID to measure session length.</td></tr>
+  <tr id="ev-4647"><td>4647</td><td>Security</td><td>User-initiated logoff</td><td>Informational</td><td>Interactive user logged off.</td></tr>
+  <tr id="ev-4648"><td><a href="4648/">4648</a></td><td>Security</td><td>Logon with explicit credentials</td><td>Low</td><td>runas, scheduled tasks or lateral-movement tools using another account's credentials.</td></tr>
+  <tr id="ev-4672"><td><a href="4672/">4672</a></td><td>Security</td><td>Special privileges assigned to new logon</td><td>Informational</td><td>An admin-equivalent logon. Useful to spot admin accounts used from unusual hosts.</td></tr>
+  <tr id="ev-4720"><td><a href="4720/">4720</a></td><td>Security</td><td>User account created</td><td>Medium</td><td>Attackers create accounts for persistence.</td></tr>
+  <tr id="ev-4722"><td>4722</td><td>Security</td><td>User account enabled</td><td>Low</td><td>Re-enabled dormant accounts are a persistence trick.</td></tr>
+  <tr id="ev-4723"><td>4723</td><td>Security</td><td>Password change attempt</td><td>Informational</td><td>User changed their own password.</td></tr>
+  <tr id="ev-4724"><td><a href="4724/">4724</a></td><td>Security</td><td>Password reset by another account</td><td>Medium</td><td>An admin (or attacker) reset someone else's password, a common takeover step.</td></tr>
+  <tr id="ev-4725"><td>4725</td><td>Security</td><td>User account disabled</td><td>Low</td><td>Mass disabling can be sabotage or ransomware prep.</td></tr>
+  <tr id="ev-4726"><td>4726</td><td>Security</td><td>User account deleted</td><td>Medium</td><td>Covering tracks or sabotage.</td></tr>
+  <tr id="ev-4728"><td><a href="4728/">4728</a></td><td>Security</td><td>Member added to global security group</td><td>Medium</td><td>Privilege escalation when the group is Domain Admins or another admin group.</td></tr>
+  <tr id="ev-4732"><td><a href="4732/">4732</a></td><td>Security</td><td>Member added to local security group</td><td>Medium</td><td>Adding to local Administrators or Remote Desktop Users gives persistence.</td></tr>
+  <tr id="ev-4756"><td>4756</td><td>Security</td><td>Member added to universal security group</td><td>Medium</td><td>Enterprise Admins / Schema Admins are universal groups.</td></tr>
+  <tr id="ev-4738"><td>4738</td><td>Security</td><td>User account changed</td><td>Low</td><td>Look for &quot;Don't require preauth&quot; (AS-REP roasting) or password-never-expires being set.</td></tr>
+  <tr id="ev-4740"><td><a href="4740/">4740</a></td><td>Security</td><td>Account locked out</td><td>Low</td><td>Brute force, or an old password cached on a phone or mapped drive.</td></tr>
+  <tr id="ev-4767"><td>4767</td><td>Security</td><td>Account unlocked</td><td>Informational</td><td>Helpdesk or self-service unlock.</td></tr>
+  <tr id="ev-4765"><td>4765</td><td>Security</td><td>SID History added to an account</td><td>High</td><td>SID History injection gives hidden admin rights.</td></tr>
+  <tr id="ev-4766"><td>4766</td><td>Security</td><td>SID History add attempt failed</td><td>High</td><td>Someone tried SID History injection.</td></tr>
+  <tr id="ev-4794"><td>4794</td><td>Security</td><td>DSRM administrator password set</td><td>High</td><td>The DSRM account can be used as a domain controller backdoor.</td></tr>
+</table></div>
+
+<h2>Kerberos / NTLM</h2>
+<div class="table-wrap"><table>
+  <tr><th>ID</th><th>Log</th><th>Event</th><th>Severity</th><th>Why it matters</th></tr>
+  <tr id="ev-4768"><td><a href="4768/">4768</a></td><td>Security</td><td>Kerberos TGT requested</td><td>Informational</td><td>Pre-auth type 0 means no pre-authentication (AS-REP roastable account).</td></tr>
+  <tr id="ev-4769"><td><a href="4769/">4769</a></td><td>Security</td><td>Kerberos service ticket requested</td><td>Informational</td><td>Bursts of requests with encryption 0x17 (RC4) for service accounts are Kerberoasting.</td></tr>
+  <tr id="ev-4771"><td><a href="4771/">4771</a></td><td>Security</td><td>Kerberos pre-authentication failed</td><td>Low</td><td>The Kerberos version of a failed logon: brute force or spraying against a DC.</td></tr>
+  <tr id="ev-4776"><td><a href="4776/">4776</a></td><td>Security</td><td>NTLM credential validation</td><td>Informational</td><td>Error 0xC000006A in bulk is NTLM brute force; NTLM where Kerberos is expected can mean pass-the-hash.</td></tr>
+</table></div>
+
+<h2>Policy, logs and tampering</h2>
+<div class="table-wrap"><table>
+  <tr><th>ID</th><th>Log</th><th>Event</th><th>Severity</th><th>Why it matters</th></tr>
+  <tr id="ev-1102"><td><a href="1102/">1102</a></td><td>Security</td><td>Security audit log cleared</td><td>Critical</td><td>Attackers clear the Security log to hide what they did. Almost never legitimate on servers.</td></tr>
+  <tr id="ev-system-104"><td>104</td><td>System</td><td>Event log cleared</td><td>High</td><td>A System or application log was cleared.</td></tr>
+  <tr id="ev-4719"><td>4719</td><td>Security</td><td>System audit policy changed</td><td>High</td><td>Turning off auditing blinds the SOC before an attack.</td></tr>
+  <tr id="ev-4739"><td>4739</td><td>Security</td><td>Domain policy changed</td><td>Medium</td><td>Password or lockout policy weakened.</td></tr>
+  <tr id="ev-4662"><td>4662</td><td>Security</td><td>Operation performed on an AD object</td><td>Informational</td><td>With the replication GUIDs (1131f6aa / 1131f6ad / 89e95b76) from a non-DC account, this is DCSync.</td></tr>
+  <tr id="ev-5136"><td>5136</td><td>Security</td><td>Directory object modified</td><td>Low</td><td>GPO and AdminSDHolder changes show up here.</td></tr>
+</table></div>
+
+<h2>Processes, services, tasks</h2>
+<div class="table-wrap"><table>
+  <tr><th>ID</th><th>Log</th><th>Event</th><th>Severity</th><th>Why it matters</th></tr>
+  <tr id="ev-4688"><td><a href="4688/">4688</a></td><td>Security</td><td>New process created</td><td>Informational</td><td>With command-line auditing on, this shows encoded PowerShell, LOLBins and ransomware commands.</td></tr>
+  <tr id="ev-4697"><td>4697</td><td>Security</td><td>Service installed</td><td>Medium</td><td>PsExec, Cobalt Strike and many RATs install a service.</td></tr>
+  <tr id="ev-system-7045"><td><a href="system-7045/">7045</a></td><td>System</td><td>New service installed</td><td>Medium</td><td>The System-log version of a new service, often PsExec (PSEXESVC) or malware.</td></tr>
+  <tr id="ev-system-7040"><td>7040</td><td>System</td><td>Service start type changed</td><td>Low</td><td>Disabling security services (Defender, backup agents) before ransomware.</td></tr>
+  <tr id="ev-system-7036"><td>7036</td><td>System</td><td>Service state changed</td><td>Informational</td><td>Service started or stopped. Look for security or backup services stopping.</td></tr>
+  <tr id="ev-4698"><td><a href="4698/">4698</a></td><td>Security</td><td>Scheduled task created</td><td>Medium</td><td>Classic persistence.</td></tr>
+  <tr id="ev-4699"><td>4699</td><td>Security</td><td>Scheduled task deleted</td><td>Low</td><td>Cleanup after a one-time task.</td></tr>
+  <tr id="ev-4702"><td>4702</td><td>Security</td><td>Scheduled task updated</td><td>Low</td><td>Existing task hijacked to run a new command.</td></tr>
+</table></div>
+
+<h2>Network and shares</h2>
+<div class="table-wrap"><table>
+  <tr><th>ID</th><th>Log</th><th>Event</th><th>Severity</th><th>Why it matters</th></tr>
+  <tr id="ev-5140"><td>5140</td><td>Security</td><td>Network share accessed</td><td>Informational</td><td>Access to ADMIN$ or C$ from a workstation is lateral movement.</td></tr>
+  <tr id="ev-5145"><td>5145</td><td>Security</td><td>Share object access check</td><td>Informational</td><td>Detailed share access; PsExec writes to ADMIN$.</td></tr>
+  <tr id="ev-5156"><td>5156</td><td>Security</td><td>Windows Filtering Platform allowed a connection</td><td>Informational</td><td>Network connection log; noisy but useful for C2 hunting.</td></tr>
+</table></div>
+
+<h2>PowerShell</h2>
+<div class="table-wrap"><table>
+  <tr><th>ID</th><th>Log</th><th>Event</th><th>Severity</th><th>Why it matters</th></tr>
+  <tr id="ev-powershell-4103"><td>4103</td><td>PowerShell</td><td>PowerShell module logging</td><td>Informational</td><td>Pipeline execution details.</td></tr>
+  <tr id="ev-powershell-4104"><td><a href="powershell-4104/">4104</a></td><td>PowerShell</td><td>PowerShell script block logged</td><td>Low</td><td>The decoded script that actually ran. Best single source for malicious PowerShell.</td></tr>
+  <tr id="ev-powershell-400"><td>400</td><td>PowerShell</td><td>PowerShell engine started</td><td>Informational</td><td>HostApplication shows the full command line, including -EncodedCommand.</td></tr>
+</table></div>
+
+<h2>RDP</h2>
+<div class="table-wrap"><table>
+  <tr><th>ID</th><th>Log</th><th>Event</th><th>Severity</th><th>Why it matters</th></tr>
+  <tr id="ev-rdp-1149"><td>1149</td><td>RDP</td><td>RDP authentication succeeded</td><td>Informational</td><td>TerminalServices-RemoteConnectionManager: who connected over RDP and from where.</td></tr>
+  <tr id="ev-rdp-21"><td>21</td><td>RDP</td><td>RDP session logon succeeded</td><td>Informational</td><td>TerminalServices-LocalSessionManager session logon.</td></tr>
+</table></div>
+
+<h2>Defender</h2>
+<div class="table-wrap"><table>
+  <tr><th>ID</th><th>Log</th><th>Event</th><th>Severity</th><th>Why it matters</th></tr>
+  <tr id="ev-defender-1116"><td>1116</td><td>Defender</td><td>Defender detected malware</td><td>High</td><td>Microsoft Defender found a threat.</td></tr>
+  <tr id="ev-defender-1117"><td>1117</td><td>Defender</td><td>Defender took action on malware</td><td>Medium</td><td>Remediation result for a detection.</td></tr>
+  <tr id="ev-defender-5001"><td>5001</td><td>Defender</td><td>Defender real-time protection disabled</td><td>High</td><td>Attackers turn off Defender before running tools.</td></tr>
+  <tr id="ev-defender-5007"><td>5007</td><td>Defender</td><td>Defender configuration changed</td><td>Medium</td><td>Exclusions added for a folder or process are a common bypass.</td></tr>
+</table></div>
+
+<h2>Sysmon</h2>
+<div class="table-wrap"><table>
+  <tr><th>ID</th><th>Log</th><th>Event</th><th>Severity</th><th>Why it matters</th></tr>
+  <tr id="ev-sysmon-1"><td><a href="sysmon-1/">1</a></td><td>Sysmon</td><td>process creation</td><td>Informational</td><td>Full command line, hashes and parent process.</td></tr>
+  <tr id="ev-sysmon-3"><td>3</td><td>Sysmon</td><td>network connection</td><td>Informational</td><td>Which process talked to which IP and port.</td></tr>
+  <tr id="ev-sysmon-7"><td>7</td><td>Sysmon</td><td>image loaded</td><td>Informational</td><td>DLL side-loading hunts.</td></tr>
+  <tr id="ev-sysmon-8"><td>8</td><td>Sysmon</td><td>CreateRemoteThread</td><td>Medium</td><td>Process injection.</td></tr>
+  <tr id="ev-sysmon-10"><td><a href="sysmon-10/">10</a></td><td>Sysmon</td><td>process access</td><td>Informational</td><td>Access to lsass.exe is credential dumping (Mimikatz, procdump).</td></tr>
+  <tr id="ev-sysmon-11"><td>11</td><td>Sysmon</td><td>file created</td><td>Informational</td><td>Dropped payloads and ransom notes.</td></tr>
+  <tr id="ev-sysmon-12"><td>12</td><td>Sysmon</td><td>registry object added or deleted</td><td>Informational</td><td>Run-key persistence.</td></tr>
+  <tr id="ev-sysmon-13"><td>13</td><td>Sysmon</td><td>registry value set</td><td>Informational</td><td>Run keys, services, Defender settings.</td></tr>
+  <tr id="ev-sysmon-22"><td>22</td><td>Sysmon</td><td>DNS query</td><td>Informational</td><td>Domains each process resolved.</td></tr>
+</table></div>
+    <div class="next">
+      <div><b>Check a whole export instead of one ID at a time</b><p>Windows Event Triage reads exported events in your browser and flags the patterns above automatically.</p></div>
+      <a class="btn btn-primary" href="../event-triage/">Open Event Triage</a>
+    </div>
+  </article>
+</main>
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../">All tools</a> · <a href="../guides/">Guides</a> · <a href="../privacy/">Privacy &amp; terms</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../assets/hub.js"></script>
+</body>
+</html>
