@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to investigate a suspicious IP address with free sources | OpsVantage Tools</title>
+<meta name="description" content="A practical order of checks for any IP in an alert: who owns it, what it is used for, whether it attacks other people, and when the answer is block, monitor or close. Uses free sources only.">
+<link rel="canonical" href="https://tools.opsvantage.net/guides/investigate-suspicious-ip/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../../assets/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="How to investigate a suspicious IP address with free sources">
+<meta property="og:description" content="A practical order of checks for any IP in an alert: who owns it, what it is used for, whether it attacks other people, and when the answer is block, monitor or close. Uses free sources only.">
+<meta property="og:url" content="https://tools.opsvantage.net/guides/investigate-suspicious-ip/">
+<script src="../../assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/hub.css">
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "How to investigate a suspicious IP address with free sources",
+    "description": "A practical order of checks for any IP in an alert: who owns it, what it is used for, whether it attacks other people, and when the answer is block, monitor or close. Uses free sources only.",
+    "url": "https://tools.opsvantage.net/guides/investigate-suspicious-ip/",
+    "datePublished": "2026-11-03",
+    "dateModified": "2026-11-03",
+    "inLanguage": "en",
+    "author": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Can I find the person behind an IP address?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Not with public sources. WHOIS gives you the network owner, such as an ISP or hosting company, not the subscriber. Only the provider can map an IP to a customer, and they will only do that for law enforcement or through their abuse process."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How accurate is IP geolocation?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Country is usually right; city often isn't, especially for mobile networks and VPNs. Use location as one signal, never as proof, and be careful with impossible travel alerts built only on geolocation."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Should I block every IP with a bad reputation?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. Blocking shared CDN, cloud or CGNAT addresses can cut off legitimate services and customers. Block hosting and VPS addresses that attacked you; for shared infrastructure, block the domain or URL instead."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What does it mean if an IP has no reports anywhere?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Either it's genuinely benign, or it's new attacker infrastructure that nobody has reported yet. Fall back on ownership and on your own logs: a fresh VPS that just logged in successfully as your finance user is an incident whatever the reputation sites say."
+        }
+      }
+    ]
+  }
+]
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../../"><img src="../../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../../#tools">Tools</a>
+      <a class="link opt" href="../../guides/">Guides</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <article class="article">
+    <div class="tool-head">
+      <div class="crumbs"><a href="../../">Tools</a> / <a href="../">Guides</a> / Investigate a suspicious IP</div>
+      <h1>How to investigate a <em>suspicious IP address</em></h1>
+      <p class="lead">A practical order of checks for any IP in an alert: who owns it, what it is used for, whether it attacks other people, and when the answer is block, monitor or close. Uses free sources only.</p>
+      <div class="meta-line">Updated 2026-11-03 · 9 min read</div>
+    </div>
+<p>An alert gives you an IP and nothing else. Maybe it's the source of a failed RDP logon, a destination your EDR flagged, or the first public hop in a phishing email. To <strong>investigate a suspicious IP address</strong> properly you need to answer four questions, in this order: who owns it, what it normally does, whether it attacks other people, and whether it actually touched anything of yours. The free sources below cover all four.</p>
+<p>The examples use <code>203.0.113.45</code>, which is a documentation address. Swap in your own.</p>
+
+<h2>Step 1: Is it even a public IP?</h2>
+<p>It sounds obvious, but a surprising number of tickets get escalated for addresses that never left the building. Rule these out before any lookup:</p>
+<table>
+  <tr><th>Range</th><th>What it is</th></tr>
+  <tr><td><code>10.0.0.0/8</code>, <code>172.16.0.0/12</code>, <code>192.168.0.0/16</code></td><td>Private (RFC 1918). It's one of your hosts, or a client's. Look it up in your CMDB or DHCP logs, not on the internet.</td></tr>
+  <tr><td><code>100.64.0.0/10</code></td><td>Carrier-grade NAT. Common on mobile and some home ISPs, and on Tailscale. Not unique, so threat intel on it means nothing.</td></tr>
+  <tr><td><code>169.254.0.0/16</code></td><td>Link-local. A host that failed to get an address from DHCP.</td></tr>
+  <tr><td><code>127.0.0.0/8</code></td><td>Loopback: the machine talking to itself.</td></tr>
+</table>
+<p>For a private IP, the investigation moves inside: which device had that address at that time, and who was using it.</p>
+
+<h2>Step 2: Who owns the IP? (WHOIS, ASN and hosting)</h2>
+<p>Ownership tells you more than any reputation score. Check the ASN and organisation with <a href="https://ipinfo.io" rel="noopener">ipinfo.io</a> or an RDAP lookup at <a href="https://rdap.org" rel="noopener">rdap.org</a>. You're looking for one of these:</p>
+<ul>
+  <li><strong>A residential or mobile ISP</strong> (Comcast, Vodafone, Grameenphone). Could be a real user at home, or a compromised home router. Location matters here.</li>
+  <li><strong>A cloud or hosting provider</strong> (AWS, Azure, DigitalOcean, OVH, Hetzner, smaller VPS hosts). Real people rarely log in to Microsoft 365 from a VPS. A sign-in or RDP attempt from hosting space deserves suspicion by default.</li>
+  <li><strong>A known business</strong> (your own vendors, a SaaS provider, a CDN like Cloudflare or Akamai). Usually benign, but CDN IPs are shared by thousands of sites, so blocking one can break things you need.</li>
+  <li><strong>A VPN or anonymiser</strong> (Mullvad, NordVPN, Tor exit nodes). Not proof of anything, but worth noting against how that user normally works.</li>
+</ul>
+<p>My rule of thumb: hosting provider plus authentication attempt is enough to block while you keep digging. Residential ISP plus authentication attempt needs more context before you act, because it might be the user.</p>
+
+<h2>Step 3: Does it attack other people? (reputation)</h2>
+<p>Now check whether others have seen it misbehave. Use more than one source; each sees a different slice of the internet.</p>
+<table>
+  <tr><th>Source</th><th>What it's good for</th><th>Watch out for</th></tr>
+  <tr><td><a href="https://www.abuseipdb.com" rel="noopener">AbuseIPDB</a></td><td>Community abuse reports: brute force, scanning, spam. The confidence score and the report categories are both useful.</td><td>A high score on a shared VPN or CGNAT address can be other users' fault.</td></tr>
+  <tr><td><a href="https://viz.greynoise.io" rel="noopener">GreyNoise</a></td><td>Tells you if the IP is mass-scanning the whole internet, and whether it's a known benign scanner (Shodan, Censys, research projects).</td><td>"Noise" means untargeted, not harmless. A scanner that found your open RDP is still a problem.</td></tr>
+  <tr><td><a href="https://www.virustotal.com" rel="noopener">VirusTotal</a></td><td>Vendor detections, plus the Relations tab: domains that resolved to the IP and files that contacted it.</td><td>Zero detections is common for fresh attacker infrastructure. Absence of evidence isn't a clean bill of health.</td></tr>
+  <tr><td><a href="https://www.shodan.io" rel="noopener">Shodan</a></td><td>What the host exposes: open ports, banners, TLS certificates. A box with RDP, an outdated web panel and a self-signed cert looks very different from a CDN edge.</td><td>Data can be days or weeks old.</td></tr>
+  <tr><td><a href="https://threatfox.abuse.ch" rel="noopener">ThreatFox</a> and <a href="https://urlhaus.abuse.ch" rel="noopener">URLhaus</a></td><td>Known malware C2 servers and malware download hosts. A hit here is high-confidence.</td><td>Coverage is narrower, so no hit doesn't clear it.</td></tr>
+</table>
+<div class="callout"><p><strong>Don't let one source decide.</strong> A clean VirusTotal result with 400 AbuseIPDB reports for SSH brute force in the past week is a bad IP. A scary AbuseIPDB score on a Cloudflare or Google address is almost always a false lead: the reports are about sites behind the shared address, not the address itself.</p></div>
+
+<h2>Step 4: Did it touch anything of yours?</h2>
+<p>Reputation tells you about the IP. Your own logs tell you whether it matters. Search for the IP across the last 7 to 30 days:</p>
+<ul>
+  <li><strong>Firewall and VPN logs:</strong> was the connection allowed or dropped? A dropped scan is a non-event; an allowed session is an incident.</li>
+  <li><strong>Authentication logs:</strong> Windows Event ID 4624 and 4625, Entra ID sign-in logs. Any <em>successful</em> logon from the IP changes everything.</li>
+  <li><strong>Proxy, DNS and EDR:</strong> for outbound traffic, which host talked to it, how often, and which process made the connection.</li>
+  <li><strong>Email gateway:</strong> did other messages come from the same sending IP?</li>
+</ul>
+<p>In Microsoft Sentinel, one query covers several of these:</p>
+<pre><code>let ip = "203.0.113.45";
+union isfuzzy=true
+  (SigninLogs | where IPAddress == ip | project TimeGenerated, Source="Entra sign-in", Detail=strcat(UserPrincipalName, " ", ResultType)),
+  (SecurityEvent | where IpAddress == ip | project TimeGenerated, Source="Windows", Detail=strcat(EventID, " ", TargetAccount)),
+  (CommonSecurityLog | where SourceIP == ip or DestinationIP == ip | project TimeGenerated, Source="Firewall", Detail=strcat(DeviceAction, " ", DestinationPort))
+| order by TimeGenerated desc</code></pre>
+
+<h2>Block, monitor or close?</h2>
+<table>
+  <tr><th>What you found</th><th>Decision</th></tr>
+  <tr><td>Private, CGNAT or your own known infrastructure</td><td>Close the external angle; investigate the internal host if the behaviour is odd.</td></tr>
+  <tr><td>Known benign scanner (GreyNoise "benign"), traffic dropped</td><td>Close. Note it so the next analyst doesn't redo the work.</td></tr>
+  <tr><td>Hosting or VPN IP with failed logons, no success</td><td>Block at the edge, check why the service is exposed, close.</td></tr>
+  <tr><td>Any successful authentication from a suspicious IP</td><td>Escalate. Reset credentials, revoke sessions, review what the session did.</td></tr>
+  <tr><td>Internal host talking to a known C2 address</td><td>Escalate immediately. Isolate the host and preserve evidence.</td></tr>
+  <tr><td>Shared CDN or cloud IP with mixed reputation</td><td>Don't block the IP. Investigate the domain or URL instead.</td></tr>
+</table>
+<p>Whatever you decide, write down the sources you checked and what each one said. "Blocked, AbuseIPDB 100%" won't help the next person. "Hetzner VPS, 312 AbuseIPDB reports for RDP brute force, GreyNoise malicious scanner, 48 failed logons on RDP gateway, no success" will. If you want to read the logon side more closely, see <a href="../event-id-4625/">Event ID 4625: failed logons explained</a> and, for cloud sign-ins, <a href="../m365-impossible-travel/">Microsoft 365 impossible travel</a>.</p>
+
+<h2>FAQ</h2>
+<h3>Can I find the person behind an IP address?</h3>
+<p>Not with public sources. WHOIS gives you the network owner, such as an ISP or hosting company, not the subscriber. Only the provider can map an IP to a customer, and they will only do that for law enforcement or through their abuse process.</p>
+<h3>How accurate is IP geolocation?</h3>
+<p>Country is usually right; city often isn't, especially for mobile networks and VPNs. Use location as one signal, never as proof, and be careful with impossible travel alerts built only on geolocation.</p>
+<h3>Should I block every IP with a bad reputation?</h3>
+<p>No. Blocking shared CDN, cloud or CGNAT addresses can cut off legitimate services and customers. Block hosting and VPS addresses that attacked you; for shared infrastructure, block the domain or URL instead.</p>
+<h3>What does it mean if an IP has no reports anywhere?</h3>
+<p>Either it's genuinely benign, or it's new attacker infrastructure that nobody has reported yet. Fall back on ownership and on your own logs: a fresh VPS that just logged in successfully as your finance user is an incident whatever the reputation sites say.</p>
+    <div class="next">
+      <div><b>Pull every IP out of the alert first</b><p>Paste a whole alert, log extract or email into the IOC Extractor: it finds and refangs every IP, domain, URL and hash, ready to check.</p></div>
+      <a class="btn btn-primary" href="../../ioc-extractor/">Open IOC Extractor</a>
+    </div>
+    <div class="next">
+      <div><b>Do all of these checks with one right-click</b><p>IOC Triage, our free browser extension, queries AbuseIPDB, GreyNoise, ipinfo, Shodan, VirusTotal and more for any IP you select, explains the verdict and copies a ticket note.</p></div>
+      <a class="btn btn-ghost" href="https://chromewebstore.google.com/detail/dncgneacahomieionjkaofmfnojlkfmc?utm_source=tools.opsvantage.net&amp;utm_medium=guide&amp;utm_campaign=investigate-suspicious-ip">Add IOC Triage to Chrome</a>
+    </div>
+  </article>
+</main>
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../../">All tools</a> · <a href="../../guides/">Guides</a> · <a href="../../privacy/">Privacy &amp; terms</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../../assets/hub.js"></script>
+</body>
+</html>

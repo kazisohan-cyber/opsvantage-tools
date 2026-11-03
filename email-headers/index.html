@@ -97,10 +97,14 @@
       <div><h3>Reply-To mismatch</h3><p>A Reply-To pointing at a different domain from the From address is the classic business email compromise setup: replies go to the attacker.</p></div>
       <div><h3>Originating IP</h3><p>The first public IP in the path is usually the sender. Check it with IOC Triage or your threat-intel tools before blocking.</p></div>
     </div>
-    <p class="related-guides sub" style="margin-top:22px">Guides: <a href="../guides/r/" style="color:var(--pink)">e</a> · <a href="../guides/H/" style="color:var(--pink)">o</a></p>
+    <p class="related-guides sub" style="margin-top:22px">Guides: <a href="../guides/read-email-headers/" style="color:var(--pink)">How to read email headers to spot phishing</a> · <a href="../guides/dmarc-none-to-reject/" style="color:var(--pink)">DMARC from p=none to p=reject, safely</a></p>
     <div class="next">
       <div><b>Fix your own domain's email security</b><p>Use the SPF / DKIM / DMARC Checker to see whether attackers could spoof your domain today.</p></div>
       <a class="btn btn-ghost" href="../dmarc-checker/">Check a domain</a>
+    </div>
+    <div class="next">
+      <div><b>Triage reported phishing in your browser</b><p>IOC Triage, our free extension, gives the origin IP, sender domain, real link destinations and attachment hashes a verdict from 15 threat-intel sources.</p></div>
+      <a class="btn btn-ghost" href="https://chromewebstore.google.com/detail/dncgneacahomieionjkaofmfnojlkfmc?utm_source=tools.opsvantage.net&amp;utm_medium=tool&amp;utm_campaign=email-headers">Add to Chrome</a>
     </div>
   </section>
 </main>
