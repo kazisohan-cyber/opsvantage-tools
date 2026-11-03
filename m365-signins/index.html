@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M365 Sign-in Log Analyzer: Impossible Travel &amp; Legacy Auth | OpsVantage Tools</title>
+<meta name="description" content="Free Microsoft 365 / Entra ID sign-in log analyzer. Load a CSV or JSON export to flag impossible travel, password spraying, legacy authentication, MFA fatigue, risky sign-ins, scripted user agents, device code flow and logins from unusual countries. Runs in your browser.">
+<link rel="canonical" href="https://tools.opsvantage.net/m365-signins/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../assets/logo.png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="M365 Sign-in Log Analyzer: impossible travel &amp; legacy auth">
+<meta property="og:description" content="Load an Entra ID sign-in export and spot account takeover signs in seconds. Private, in-browser, free.">
+<meta property="og:url" content="https://tools.opsvantage.net/m365-signins/">
+<script>
+  (function(){try{var t=localStorage.getItem('ov-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/hub.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "M365 Sign-in Review",
+  "url": "https://tools.opsvantage.net/m365-signins/",
+  "applicationCategory": "SecurityApplication",
+  "operatingSystem": "Any (web browser)",
+  "isAccessibleForFree": true,
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "description": "Analyze Microsoft Entra ID sign-in log exports for impossible travel, password spraying, legacy authentication and MFA fatigue. Runs in the browser.",
+  "publisher": { "@type": "Organization", "name": "OpsVantage", "url": "https://opsvantage.net/" }
+}
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../"><img src="../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../#tools">All tools</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="tool-head">
+    <div class="crumbs"><a href="../">Tools</a> / M365 Sign-in Review</div>
+    <h1>M365 Sign-in <em>Review</em></h1>
+    <p class="lead">Load a Microsoft Entra ID sign-in log export and see the account-takeover signals in seconds: impossible travel, password spraying, legacy authentication, MFA fatigue, risky sign-ins, scripted clients and logins from countries your users never work from.</p>
+    <span class="privacy-note">● Runs in your browser. The sign-in log never leaves your device.</span>
+  </div>
+
+  <div class="workspace">
+    <section class="panel" aria-labelledby="in-h">
+      <div class="panel-h">
+        <h2 id="in-h">Sign-in log export</h2>
+        <div class="row-actions" style="margin:0">
+          <label class="btn btn-ghost btn-sm" for="file" style="cursor:pointer">Open file</label>
+          <input type="file" id="file" accept=".csv,.json,.txt" hidden>
+          <button class="btn btn-ghost btn-sm" type="button" id="sample">Load sample</button>
+          <button class="btn btn-ghost btn-sm" type="button" id="clear">Clear</button>
+        </div>
+      </div>
+      <label for="input" style="position:absolute;left:-9999px">Sign-in log CSV or JSON</label>
+      <textarea class="input" id="input" spellcheck="false" placeholder="Drop the CSV or JSON file here, or paste its contents.&#10;&#10;Entra admin center > Identity > Monitoring & health > Sign-in logs > Download > CSV or JSON&#10;(interactive and non-interactive exports both work)&#10;&#10;Graph / PowerShell: Get-MgAuditLogSignIn -All | ConvertTo-Json -Depth 5"></textarea>
+      <div class="opts">
+        <label for="home">Home country (optional):</label>
+        <input class="input" id="home" type="text" maxlength="2" placeholder="auto" style="width:80px;padding:6px 10px;font-size:13px;text-transform:uppercase" spellcheck="false">
+      </div>
+      <div class="row-actions">
+        <button class="btn btn-primary btn-sm" type="button" id="analyze">Analyze sign-ins</button>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="out-h" aria-live="polite">
+      <div class="panel-h">
+        <h2 id="out-h">Findings</h2>
+        <button class="btn btn-ghost btn-sm" type="button" id="note" disabled>Copy ticket note</button>
+      </div>
+      <div id="out"><p class="empty">Load a sign-in export and press Analyze.</p></div>
+    </section>
+  </div>
+
+  <section class="panel" id="users-panel" hidden style="margin-bottom:18px">
+    <div class="panel-h"><h2>Users</h2><span class="sub" style="margin:0;font-size:.82rem">Riskiest first</span></div>
+    <div class="table-wrap"><table class="data" id="users"></table></div>
+  </section>
+  <section class="panel" id="geo-panel" hidden style="margin-bottom:56px">
+    <div class="panel-h"><h2>Countries</h2></div>
+    <div class="table-wrap"><table class="data" id="geo"></table></div>
+  </section>
+
+  <section class="howto">
+    <h2>What it looks for</h2>
+    <div class="cols">
+      <div><h3>Account takeover</h3><p>Impossible travel between countries, successful sign-ins from countries outside your normal footprint, risky sign-ins flagged by Entra ID Protection.</p></div>
+      <div><h3>Credential attacks</h3><p>Password spraying across many users, brute force on one user, smart lockouts, and repeated MFA failures that suggest push bombing.</p></div>
+      <div><h3>Weak paths in</h3><p>Legacy authentication (IMAP, POP, SMTP, ActiveSync), sign-ins with no MFA, device code flow, ROPC and scripted user agents like python-requests.</p></div>
+    </div>
+    <p class="related-guides sub" style="margin-top:22px">Guides: <a href="../guides/m/" style="color:var(--pink)">3</a> · <a href="../guides/M/" style="color:var(--pink)">i</a></p>
+    <div class="next">
+      <div><b>Review the whole tenant, not just the logs</b><p>The M365 Posture Scanner signs in read-only and grades MFA, admins, Conditional Access, app consents and email security.</p></div>
+      <a class="btn btn-ghost" href="../m365-posture/">Scan a tenant</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../">All tools</a> · <a href="../privacy/">Privacy &amp; terms</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../assets/hub.js"></script>
+<script src="../assets/lib/ioc.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

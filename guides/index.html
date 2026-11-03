@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOC guides: Windows events, email security, Microsoft 365 | OpsVantage Tools</title>
+<meta name="description" content="Practical guides for SOC analysts, IT admins and MSPs on Windows event IDs, phishing email headers, SPF, DMARC and Microsoft 365 sign-in alerts.">
+<link rel="canonical" href="https://tools.opsvantage.net/guides/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../assets/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SOC guides: Windows events, email security, Microsoft 365">
+<meta property="og:description" content="Practical guides for SOC analysts, IT admins and MSPs on Windows event IDs, phishing email headers, SPF, DMARC and Microsoft 365 sign-in alerts.">
+<meta property="og:url" content="https://tools.opsvantage.net/guides/">
+<script src="../assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/hub.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "OpsVantage SOC guides",
+  "url": "https://tools.opsvantage.net/guides/"
+}
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../"><img src="../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../#tools">Tools</a>
+      <a class="link opt" href="../guides/">Guides</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <div class="tool-head">
+    <div class="crumbs"><a href="../">Tools</a> / Guides</div>
+    <h1>Practical <em>SOC guides</em></h1>
+    <p class="lead">Short, field-tested write-ups for analysts, IT admins and MSPs: what an alert or record means, how to investigate it, and how to fix it. Each one links to a free tool that does the tedious part.</p>
+  </div>
+  <div class="guide-list" style="padding-bottom:56px">
+    <a class="guide-card" href="event-id-4625/"><h3>Windows Event ID 4625: failed logons explained and how to investigate</h3><p>What Windows Security Event 4625 means, how to read the logon type and status codes, how to tell brute force from password spraying, and what to do next.</p><span>9 min read →</span></a>
+    <a class="guide-card" href="windows-logon-types/"><h3>Windows logon types explained (Event ID 4624): what each one means for security</h3><p>Every logon type in Event ID 4624 and 4625, from 2 to 13, with what it looks like in normal use and which ones point to RDP abuse, lateral movement or pass-the-hash.</p><span>8 min read →</span></a>
+    <a class="guide-card" href="read-email-headers/"><h3>How to read email headers to spot phishing and spoofing</h3><p>Where to find full email headers in Outlook, Gmail and Microsoft 365, how to read Received lines, SPF, DKIM, DMARC and compauth results, and the red flags of spoofing and business email compromise.</p><span>10 min read →</span></a>
+    <a class="guide-card" href="dmarc-none-to-reject/"><h3>DMARC from p=none to p=reject: a safe step-by-step rollout</h3><p>How to move a domain's DMARC policy from monitoring to quarantine and reject without blocking your own email: inventory senders, fix SPF and DKIM alignment, read reports and ramp up.</p><span>10 min read →</span></a>
+    <a class="guide-card" href="spf-too-many-dns-lookups/"><h3>SPF permerror: too many DNS lookups (the 10-lookup limit) and how to fix it</h3><p>Why SPF records break when they need more than 10 DNS lookups, what counts toward the limit, and five safe ways to get back under it without losing legitimate mail.</p><span>7 min read →</span></a>
+    <a class="guide-card" href="m365-impossible-travel/"><h3>Microsoft 365 impossible travel alert: how to investigate and respond</h3><p>What triggers impossible travel and atypical travel alerts in Microsoft 365 and Entra ID, how to rule out VPN false positives, the sign-in log fields to check, and the response steps when it is real.</p><span>9 min read →</span></a>
+  </div>
+</main>
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../">All tools</a> · <a href="../guides/">Guides</a> · <a href="../privacy/">Privacy &amp; terms</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../assets/hub.js"></script>
+</body>
+</html>

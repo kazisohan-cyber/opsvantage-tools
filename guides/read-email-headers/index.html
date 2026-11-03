@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to read email headers to spot phishing and spoofing | OpsVantage Tools</title>
+<meta name="description" content="Where to find full email headers in Outlook, Gmail and Microsoft 365, how to read Received lines, SPF, DKIM, DMARC and compauth results, and the red flags of spoofing and business email compromise.">
+<link rel="canonical" href="https://tools.opsvantage.net/guides/read-email-headers/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../../assets/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="How to read email headers to spot phishing and spoofing">
+<meta property="og:description" content="Where to find full email headers in Outlook, Gmail and Microsoft 365, how to read Received lines, SPF, DKIM, DMARC and compauth results, and the red flags of spoofing and business email compromise.">
+<meta property="og:url" content="https://tools.opsvantage.net/guides/read-email-headers/">
+<script src="../../assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/hub.css">
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "How to read email headers to spot phishing and spoofing",
+    "description": "Where to find full email headers in Outlook, Gmail and Microsoft 365, how to read Received lines, SPF, DKIM, DMARC and compauth results, and the red flags of spoofing and business email compromise.",
+    "url": "https://tools.opsvantage.net/guides/read-email-headers/",
+    "datePublished": "2026-11-03",
+    "dateModified": "2026-11-03",
+    "inLanguage": "en",
+    "author": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Can email headers be faked?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Partly. A sender can add fake Received lines and set any From, Reply-To or display name. What they can't fake are the lines your own mail servers add, including the connecting IP and your server's Authentication-Results. That's why you read from your own server downwards and trust only what it recorded."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "If DMARC passes, is the email safe?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. DMARC pass proves the From domain is authentic, nothing more. The domain could be a lookalike registered last week, or a real supplier whose mailbox was taken over. Check the domain spelling and the request itself."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Why does SPF pass but DMARC fail?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "SPF checks the hidden envelope sender (Return-Path), which can be any domain the attacker controls. DMARC also requires that domain to match the visible From address. A pass on a different domain doesn't count, which is exactly the trick DMARC exists to catch."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Where's the sender's real IP address?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "In the oldest Received line your organisation's servers added, inside the brackets after the claimed hostname. Microsoft 365 sometimes adds X-Originating-IP for mail sent through its own clients."
+        }
+      }
+    ]
+  }
+]
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../../"><img src="../../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../../#tools">Tools</a>
+      <a class="link opt" href="../../guides/">Guides</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <article class="article">
+    <div class="tool-head">
+      <div class="crumbs"><a href="../../">Tools</a> / <a href="../">Guides</a> / Reading email headers</div>
+      <h1>How to read <em>email headers</em> to spot phishing</h1>
+      <p class="lead">Where to find full email headers in Outlook, Gmail and Microsoft 365, how to read Received lines, SPF, DKIM, DMARC and compauth results, and the red flags of spoofing and business email compromise.</p>
+      <div class="meta-line">Updated 2026-11-03 · 10 min read</div>
+    </div>
+<p>A user forwards an email: "Our bank details have changed, please update before Friday's payment." The display name is a real supplier. The logo is right. The user wants to know if it's legitimate, and they want to know now. The body won't tell you; it was written to look genuine. The <strong>email headers</strong> will, because most of them are written by the mail servers along the way, not by the sender.</p>
+<p>This is how to read email headers to spot phishing and spoofing, in the order that gets you to an answer fastest.</p>
+
+<h2>Get the full headers</h2>
+<table>
+  <tr><th>Client</th><th>Where</th></tr>
+  <tr><td>Outlook (classic, Windows)</td><td>Open the message &gt; File &gt; Properties &gt; <em>Internet headers</em></td></tr>
+  <tr><td>Outlook (new / web)</td><td>Open the message &gt; ⋯ &gt; View &gt; <em>View message source</em> (or message details)</td></tr>
+  <tr><td>Gmail</td><td>⋮ next to Reply &gt; <em>Show original</em></td></tr>
+  <tr><td>Microsoft Defender</td><td>Explorer or the email entity page &gt; <em>Email headers</em></td></tr>
+  <tr><td>Reported phish as .eml</td><td>The headers are at the top of the file; open it in a text editor</td></tr>
+</table>
+
+<h2>Read the Received lines from the bottom up</h2>
+<p>Every server that handles the message adds a <code>Received:</code> line at the <strong>top</strong>. So the bottom Received line is the oldest hop, closest to the sender, and the top one is your own server.</p>
+<pre><code>Received: from mail.badsender.top (91.215.85.142) by AM9PR02MB7012.mail.protection.outlook.com ...
+Received: from DESKTOP-7H2K (unknown [45.88.97.11]) by mail.badsender.top (Postfix) ...</code></pre>
+<ul>
+  <li>In <code>from X (Y [IP])</code>, <strong>X</strong> is the name the sender claimed and is easily forged. The <strong>IP in brackets</strong> is what the receiving server actually saw on the connection. Trust that one.</li>
+  <li>The first public IP in the chain is usually the true origin. Lines below your organisation's first server can be forged by the sender, so treat them as hints.</li>
+  <li>Large gaps between hop timestamps or times going backwards suggest forged lines or a queued spam run.</li>
+</ul>
+
+<h2>Authentication results</h2>
+<p>Your receiving server records its verdicts in <code>Authentication-Results</code> (and Microsoft adds <code>compauth</code>):</p>
+<pre><code>Authentication-Results: spf=fail (sender IP is 91.215.85.142) smtp.mailfrom=badsender.top;
+ dkim=none (message not signed) header.d=none; dmarc=fail action=quarantine header.from=contoso-finance.com; compauth=fail reason=000</code></pre>
+<table>
+  <tr><th>Check</th><th>What it proves</th><th>Pitfall</th></tr>
+  <tr><td><strong>SPF</strong></td><td>The sending IP is allowed by the <em>envelope</em> domain (Return-Path)</td><td>Checks the hidden envelope domain, not the From address you see</td></tr>
+  <tr><td><strong>DKIM</strong></td><td>The message was signed by domain <code>d=</code> and not changed since</td><td>Any domain can sign; what matters is <em>which</em> domain</td></tr>
+  <tr><td><strong>DMARC</strong></td><td>SPF or DKIM passed <em>and</em> lined up with the visible From domain</td><td><code>dmarc=pass</code> is the result that actually protects the From address</td></tr>
+  <tr><td><strong>compauth</strong></td><td>Microsoft's combined verdict, including implicit authentication</td><td><code>fail</code> means Microsoft thinks the From domain is spoofed</td></tr>
+</table>
+<div class="callout"><p><strong>Rule of thumb:</strong> <code>dmarc=fail</code> on a domain you recognise is the strongest single spoofing signal. <code>dmarc=pass</code> only proves the domain is real, not that it is the company you think it is: check for lookalike domains such as <code>rnicrosoft.com</code> or <code>contoso-finance.com</code>.</p></div>
+
+<h2>Sender fields and BEC red flags</h2>
+<ul>
+  <li><strong>Reply-To differs from From:</strong> replies go to the attacker. The classic business email compromise setup, especially with invoice or payment requests.</li>
+  <li><strong>Display name tricks:</strong> <code>"Microsoft 365 Billing" &lt;billing@random-domain.top&gt;</code>, or a display name that contains a different email address.</li>
+  <li><strong>Return-Path on an unrelated domain</strong> without DMARC pass.</li>
+  <li><strong>Message-ID</strong> created by a server unrelated to the claimed sender.</li>
+  <li><strong>X-Mailer</strong> values like <code>PHPMailer</code> or scripts in mail that claims to be from a large company.</li>
+  <li><strong>Spam verdicts:</strong> <code>X-MS-Exchange-Organization-SCL</code> of 5 or more, or <code>SFV:SPM</code> in <code>X-Forefront-Antispam-Report</code>.</li>
+</ul>
+
+<p>One trap catches even experienced analysts: a message that passes everything. If a supplier's real mailbox has been compromised, SPF, DKIM and DMARC all pass because the email genuinely came from them. The tells are behavioural instead: an unusual request, a new Reply-To, a sending IP in a country the supplier doesn't operate in, or an <code>X-Mailer</code> that doesn't match their usual mail client. When money is involved, confirm by phone on a number you already had.</p>
+
+<h2>A five-minute triage checklist</h2>
+<ol>
+  <li>Get the full headers or the .eml.</li>
+  <li>Read DMARC and compauth first. Fail on a known brand: treat as phishing.</li>
+  <li>Compare From, Reply-To and Return-Path domains.</li>
+  <li>Find the originating IP (first public IP in the brackets) and check its reputation.</li>
+  <li>Look at the links' real destinations and any attachment hashes, never by clicking.</li>
+  <li>If it is phishing: purge similar messages from all mailboxes, block the sender domain and IPs, and check whether anyone clicked or replied.</li>
+</ol>
+
+<h2>FAQ</h2>
+<h3>Can email headers be faked?</h3>
+<p>Partly. A sender can add fake <code>Received</code> lines and set any From, Reply-To or display name. What they can't fake are the lines your own mail servers add, including the connecting IP and your server's Authentication-Results. That's why you read from your own server downwards and trust only what it recorded.</p>
+<h3>If DMARC passes, is the email safe?</h3>
+<p>No. DMARC pass proves the From domain is authentic, nothing more. The domain could be a lookalike registered last week, or a real supplier whose mailbox was taken over. Check the domain spelling and the request itself.</p>
+<h3>Why does SPF pass but DMARC fail?</h3>
+<p>SPF checks the hidden envelope sender (Return-Path), which can be any domain the attacker controls. DMARC also requires that domain to match the visible From address. A pass on a different domain doesn't count, which is exactly the trick DMARC exists to catch.</p>
+<h3>Where's the sender's real IP address?</h3>
+<p>In the oldest <code>Received</code> line your organisation's servers added, inside the brackets after the claimed hostname. Microsoft 365 sometimes adds <code>X-Originating-IP</code> for mail sent through its own clients.</p>
+    <div class="next">
+      <div><b>Let the analyzer read them for you</b><p>Paste headers or drop an .eml file: authentication results, delivery path, origin IP and BEC red flags with a verdict. Nothing leaves your browser.</p></div>
+      <a class="btn btn-primary" href="../../email-headers/">Open Email Header Analyzer</a>
+    </div>
+  </article>
+</main>
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../../">All tools</a> · <a href="../../guides/">Guides</a> · <a href="../../privacy/">Privacy &amp; terms</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../../assets/hub.js"></script>
+</body>
+</html>

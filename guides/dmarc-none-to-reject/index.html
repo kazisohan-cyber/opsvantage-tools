@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DMARC from p=none to p=reject: a safe step-by-step rollout | OpsVantage Tools</title>
+<meta name="description" content="How to move a domain's DMARC policy from monitoring to quarantine and reject without blocking your own email: inventory senders, fix SPF and DKIM alignment, read reports and ramp up.">
+<link rel="canonical" href="https://tools.opsvantage.net/guides/dmarc-none-to-reject/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../../assets/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DMARC from p=none to p=reject: a safe step-by-step rollout">
+<meta property="og:description" content="How to move a domain's DMARC policy from monitoring to quarantine and reject without blocking your own email: inventory senders, fix SPF and DKIM alignment, read reports and ramp up.">
+<meta property="og:url" content="https://tools.opsvantage.net/guides/dmarc-none-to-reject/">
+<script src="../../assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/hub.css">
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "DMARC from p=none to p=reject: a safe step-by-step rollout",
+    "description": "How to move a domain's DMARC policy from monitoring to quarantine and reject without blocking your own email: inventory senders, fix SPF and DKIM alignment, read reports and ramp up.",
+    "url": "https://tools.opsvantage.net/guides/dmarc-none-to-reject/",
+    "datePublished": "2026-11-03",
+    "dateModified": "2026-11-03",
+    "inLanguage": "en",
+    "author": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "How long should I stay at p=none?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Long enough to see every regular sender in the reports: two to four weeks for a small business, longer if you have many systems or monthly processes such as payroll and statements. Waiting for a month-end run is worth it."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Will p=reject break email forwarding?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Forwarding breaks SPF, because the forwarder's IP isn't in your record. DKIM usually survives, so mail that is DKIM-signed with your domain keeps passing. Mailing lists that rewrite the subject or footer can break DKIM too; many modern receivers handle this with ARC."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Do I need DMARC on a domain that never sends email?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes, those need it most. Publish v=spf1 -all and v=DMARC1; p=reject so nobody can use the domain for phishing. Parked and old brand domains are common targets because nobody watches them."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What's the difference between p=quarantine and p=reject?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Quarantine asks receivers to treat failing mail as suspicious, usually by delivering it to spam. Reject asks them to refuse it at the door. Quarantine is the safer middle step; reject is the end goal."
+        }
+      }
+    ]
+  }
+]
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../../"><img src="../../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../../#tools">Tools</a>
+      <a class="link opt" href="../../guides/">Guides</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <article class="article">
+    <div class="tool-head">
+      <div class="crumbs"><a href="../../">Tools</a> / <a href="../">Guides</a> / DMARC rollout</div>
+      <h1>DMARC from <em>p=none to p=reject</em>, safely</h1>
+      <p class="lead">How to move a domain's DMARC policy from monitoring to quarantine and reject without blocking your own email: inventory senders, fix SPF and DKIM alignment, read reports and ramp up.</p>
+      <div class="meta-line">Updated 2026-11-03 · 10 min read</div>
+    </div>
+<p>Most domains that have DMARC are stuck at <code>p=none</code>. The record went up during a deliverability scare, the reports go to a mailbox nobody opens, and the domain is still as easy to spoof as it was before. <code>p=none</code> only <strong>watches</strong>: a fake invoice "from" your finance team is still delivered.</p>
+<p>The reason people stall is fear of blocking their own invoices and newsletters. That fear is reasonable, and it's also manageable. This is how to move DMARC from p=none to p=reject safely, step by step, without losing legitimate mail.</p>
+
+<h2>Why it matters now</h2>
+<ul>
+  <li>Since 2024, Google and Yahoo require bulk senders (around 5,000+ messages a day to their users) to have SPF, DKIM and DMARC. Microsoft introduced similar requirements for Outlook.com consumer mailboxes in 2025.</li>
+  <li>Business email compromise often starts with a message that looks like it came from your own domain or a supplier's. Only an enforced DMARC policy stops receivers from delivering those.</li>
+</ul>
+
+<h2>Step 1: List everything that sends as your domain</h2>
+<p>Usually more than you think: Microsoft 365 or Google Workspace, the website's contact form, the CRM, invoicing and payroll systems, the helpdesk (HaloPSA, Zendesk), marketing (Mailchimp, HubSpot), scanners and printers, and monitoring tools. Ask each team, and let the DMARC reports in step 3 find the rest.</p>
+
+<h2>Step 2: Make SPF and DKIM pass <em>and align</em></h2>
+<p>DMARC passes when <strong>either</strong> SPF or DKIM passes <strong>and</strong> the domain it checked matches the visible From domain (alignment).</p>
+<ul>
+  <li><strong>DKIM is the one to rely on.</strong> Turn on DKIM signing with your own domain in every service that supports it (Microsoft 365, Google, Mailchimp, HubSpot, SendGrid all do). DKIM survives forwarding; SPF does not.</li>
+  <li><strong>SPF:</strong> one record, every legitimate sender included, under 10 DNS lookups, ending in <code>~all</code> for now. Many SaaS senders use their own bounce domain, so SPF won't align for them; that is fine when DKIM aligns.</li>
+</ul>
+
+<h2>Step 3: Publish p=none with reporting</h2>
+<pre><code>_dmarc.example.com  TXT  "v=DMARC1; p=none; rua=mailto:dmarc-reports@example.com; fo=1"</code></pre>
+<p>Receivers will send daily <strong>aggregate reports</strong> (XML) to the <code>rua</code> address listing every IP that sent mail as your domain and whether it passed. Use a dedicated mailbox or a DMARC reporting service; raw XML is not meant to be read by hand.</p>
+
+<h2>Step 4: Read two to four weeks of reports</h2>
+<p>For each sending source in the reports, decide:</p>
+<table>
+  <tr><th>What you see</th><th>Action</th></tr>
+  <tr><td>Your service, DKIM pass aligned</td><td>Done</td></tr>
+  <tr><td>Your service, DKIM fail or not aligned</td><td>Enable custom-domain DKIM in that service</td></tr>
+  <tr><td>Your service, only SPF and not aligned</td><td>Enable DKIM, or set a custom bounce (Return-Path) domain</td></tr>
+  <tr><td>Forwarders (mailing lists, auto-forwarding)</td><td>Expected; DKIM usually still passes</td></tr>
+  <tr><td>Unknown IPs failing everything</td><td>That is spoofing: exactly what enforcement will stop</td></tr>
+</table>
+
+<p>My rule before leaving <code>p=none</code>: every source that sends more than a handful of messages a week passes DKIM with your domain. SPF-only passes are fragile, and forwarded mail will break them. If a service can't sign with your domain, move it to a subdomain or replace it.</p>
+
+<h2>Step 5: Quarantine, gradually</h2>
+<pre><code>v=DMARC1; p=quarantine; pct=25; rua=mailto:dmarc-reports@example.com; fo=1</code></pre>
+<p>Failing mail now goes to spam for 25% of messages. Raise <code>pct</code> to 50 and then 100 over a few weeks while watching the reports and asking teams whether anything went missing.</p>
+
+<h2>Step 6: Reject</h2>
+<pre><code>v=DMARC1; p=reject; rua=mailto:dmarc-reports@example.com; fo=1</code></pre>
+<p>Receivers now refuse spoofed mail outright. Then tighten the rest:</p>
+<ul>
+  <li>Change SPF from <code>~all</code> to <code>-all</code> once every sender is listed.</li>
+  <li>Make sure <code>sp=</code> (subdomain policy) is not <code>none</code>, or attackers simply spoof <code>billing.example.com</code>.</li>
+  <li>Lock down domains that never send mail: <code>v=spf1 -all</code> and <code>v=DMARC1; p=reject</code>. Parked domains are favourite spoofing targets.</li>
+  <li>Rotate DKIM keys to 2048-bit if any are still 1024-bit.</li>
+</ul>
+
+<h2>Common mistakes</h2>
+<ul>
+  <li>Two DMARC records on the same name: receivers ignore DMARC entirely.</li>
+  <li>Jumping straight to <code>p=reject</code> without reading reports.</li>
+  <li>A <code>rua</code> mailbox on another domain without the authorisation record that domain needs.</li>
+  <li>Staying at <code>p=none</code> for years. Monitoring is a phase, not a destination.</li>
+</ul>
+
+<h2>FAQ</h2>
+<h3>How long should I stay at p=none?</h3>
+<p>Long enough to see every regular sender in the reports: two to four weeks for a small business, longer if you have many systems or monthly processes such as payroll and statements. Waiting for a month-end run is worth it.</p>
+<h3>Will p=reject break email forwarding?</h3>
+<p>Forwarding breaks SPF, because the forwarder's IP isn't in your record. DKIM usually survives, so mail that is DKIM-signed with your domain keeps passing. Mailing lists that rewrite the subject or footer can break DKIM too; many modern receivers handle this with ARC.</p>
+<h3>Do I need DMARC on a domain that never sends email?</h3>
+<p>Yes, those need it most. Publish <code>v=spf1 -all</code> and <code>v=DMARC1; p=reject</code> so nobody can use the domain for phishing. Parked and old brand domains are common targets because nobody watches them.</p>
+<h3>What's the difference between p=quarantine and p=reject?</h3>
+<p>Quarantine asks receivers to treat failing mail as suspicious, usually by delivering it to spam. Reject asks them to refuse it at the door. Quarantine is the safer middle step; reject is the end goal.</p>
+    <div class="next">
+      <div><b>Check where your domain stands right now</b><p>The SPF, DKIM &amp; DMARC Checker grades the domain, shows whether it can be spoofed and gives the exact records to publish.</p></div>
+      <a class="btn btn-primary" href="../../dmarc-checker/">Check a domain</a>
+    </div>
+  </article>
+</main>
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../../">All tools</a> · <a href="../../guides/">Guides</a> · <a href="../../privacy/">Privacy &amp; terms</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../../assets/hub.js"></script>
+</body>
+</html>

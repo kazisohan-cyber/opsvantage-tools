@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SPF permerror: too many DNS lookups (the 10-lookup limit) and how to fix it | OpsVantage Tools</title>
+<meta name="description" content="Why SPF records break when they need more than 10 DNS lookups, what counts toward the limit, and five safe ways to get back under it without losing legitimate mail.">
+<link rel="canonical" href="https://tools.opsvantage.net/guides/spf-too-many-dns-lookups/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../../assets/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SPF permerror: too many DNS lookups (the 10-lookup limit) and how to fix it">
+<meta property="og:description" content="Why SPF records break when they need more than 10 DNS lookups, what counts toward the limit, and five safe ways to get back under it without losing legitimate mail.">
+<meta property="og:url" content="https://tools.opsvantage.net/guides/spf-too-many-dns-lookups/">
+<script src="../../assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/hub.css">
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "SPF permerror: too many DNS lookups (the 10-lookup limit) and how to fix it",
+    "description": "Why SPF records break when they need more than 10 DNS lookups, what counts toward the limit, and five safe ways to get back under it without losing legitimate mail.",
+    "url": "https://tools.opsvantage.net/guides/spf-too-many-dns-lookups/",
+    "datePublished": "2026-11-03",
+    "dateModified": "2026-11-03",
+    "inLanguage": "en",
+    "author": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "How do I count my SPF lookups?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Follow every include: and redirect= recursively and add one for each include, a, mx, ptr, exists and redirect you meet. Doing it by hand is tedious; a checker that walks the tree for you is faster and less error-prone."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Do ip4 and ip6 count toward the limit?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. They need no DNS lookup, which is why replacing hostnames with IP ranges you control is a reliable way to save lookups."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I split SPF into two records?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. Two SPF records on the same name is itself a permerror. Use subdomains for different senders instead."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does the limit apply to included records' own includes?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. The 10 lookups cover the whole evaluation, so nested includes inside a provider's record count against your total."
+        }
+      }
+    ]
+  }
+]
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../../"><img src="../../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../../#tools">Tools</a>
+      <a class="link opt" href="../../guides/">Guides</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <article class="article">
+    <div class="tool-head">
+      <div class="crumbs"><a href="../../">Tools</a> / <a href="../">Guides</a> / SPF 10-lookup limit</div>
+      <h1>SPF permerror: <em>too many DNS lookups</em></h1>
+      <p class="lead">Why SPF records break when they need more than 10 DNS lookups, what counts toward the limit, and five safe ways to get back under it without losing legitimate mail.</p>
+      <div class="meta-line">Updated 2026-11-03 · 7 min read</div>
+    </div>
+<p>Invoices from your billing system start landing in customers' spam folders, and everyone swears nothing changed. Quite often something did: someone added one more <code>include:</code> to the SPF record for a new marketing tool, and that pushed it past the <strong>SPF 10 DNS lookup limit</strong>. Nothing visibly broke. Receivers just started returning <strong>permerror</strong>.</p>
+<p>The limit comes from RFC 7208: an SPF record may trigger at most 10 DNS lookups while it is evaluated. Past that, most receivers treat SPF as failed for <em>every</em> sender, the legitimate ones included, and DMARC then rests entirely on DKIM. Here's what counts and how to get back under it.</p>
+
+<h2>What counts toward the limit</h2>
+<table>
+  <tr><th>Mechanism</th><th>Counts?</th><th>Note</th></tr>
+  <tr><td><code>include:</code></td><td>Yes, 1 each</td><td>Plus everything inside the included record. This is where the count explodes.</td></tr>
+  <tr><td><code>a</code>, <code>mx</code></td><td>Yes, 1 each</td><td><code>mx</code> also looks up each MX host's address</td></tr>
+  <tr><td><code>redirect=</code></td><td>Yes</td><td>Plus the target record's lookups</td></tr>
+  <tr><td><code>exists:</code>, <code>ptr</code></td><td>Yes</td><td><code>ptr</code> is deprecated; remove it</td></tr>
+  <tr><td><code>ip4:</code>, <code>ip6:</code>, <code>all</code></td><td>No</td><td>Free: no DNS lookup needed</td></tr>
+</table>
+<p>There is a second, lesser-known limit: no more than two lookups that return nothing ("void lookups"), for example an include of a domain that no longer has an SPF record.</p>
+
+<h2>A typical record that breaks</h2>
+<pre><code>v=spf1 include:spf.protection.outlook.com include:_spf.google.com include:servers.mcsv.net
+ include:sendgrid.net include:mail.zendesk.com include:_spf.salesforce.com a mx ~all</code></pre>
+<p>Six includes plus <code>a</code> and <code>mx</code> already makes 8 at the top level, and the Google, Salesforce and Microsoft includes pull in several more lookups of their own. The total passes 10 without anyone noticing, until mail starts landing in spam.</p>
+
+<h2>Five ways to get under 10</h2>
+<ol>
+  <li><strong>Remove what you no longer use.</strong> Old marketing tools, a previous mail host, a decommissioned helpdesk. The cheapest fix and usually enough.</li>
+  <li><strong>Drop <code>a</code> and <code>mx</code></strong> unless the web server or the MX hosts really send mail. With Microsoft 365, the MX host does not send outbound mail; the Microsoft include already covers it.</li>
+  <li><strong>Replace your own servers with <code>ip4:</code>.</strong> If your on-premises relay has a fixed IP, list the IP instead of a hostname.</li>
+  <li><strong>Move bulk senders to a subdomain.</strong> Send marketing from <code>news.example.com</code> with its own SPF record and DKIM. Each subdomain gets its own 10 lookups, and a reputation problem there won't hurt your main domain.</li>
+  <li><strong>Rely on DKIM where SPF can't align anyway.</strong> Many SaaS platforms send with their own bounce domain, so including them in your SPF does nothing for DMARC. If their DKIM signs with your domain, you can often remove their include entirely. Check your DMARC reports before removing.</li>
+</ol>
+
+<h2>What about SPF flattening?</h2>
+<p>Flattening replaces includes with the IP ranges they resolve to. It works, but providers change their IPs without notice, and a stale flattened record silently fails. Only use it through a service that re-flattens automatically, and prefer the five fixes above first.</p>
+
+<h2>After you change the record</h2>
+<ul>
+  <li>Keep exactly <strong>one</strong> SPF TXT record on the domain; two records is also a permerror.</li>
+  <li>Re-check the lookup count, then send test mail to Gmail and Outlook.com and confirm <code>spf=pass</code> in the headers.</li>
+  <li>Watch DMARC aggregate reports for a week for any sender that started failing.</li>
+</ul>
+<p>If you only do one thing, do fix 1. In most records that are over the limit, at least one include belongs to a service that was cancelled long ago, and removing it is free and risk-free once you've confirmed nothing sends through it. If you're working towards an enforced DMARC policy, the <a href="../dmarc-none-to-reject/">DMARC rollout guide</a> covers the next steps.</p>
+
+<h2>FAQ</h2>
+<h3>How do I count my SPF lookups?</h3>
+<p>Follow every <code>include:</code> and <code>redirect=</code> recursively and add one for each <code>include</code>, <code>a</code>, <code>mx</code>, <code>ptr</code>, <code>exists</code> and <code>redirect</code> you meet. Doing it by hand is tedious; a checker that walks the tree for you is faster and less error-prone.</p>
+<h3>Do ip4 and ip6 count toward the limit?</h3>
+<p>No. They need no DNS lookup, which is why replacing hostnames with IP ranges you control is a reliable way to save lookups.</p>
+<h3>Can I split SPF into two records?</h3>
+<p>No. Two SPF records on the same name is itself a permerror. Use subdomains for different senders instead.</p>
+<h3>Does the limit apply to included records' own includes?</h3>
+<p>Yes. The 10 lookups cover the whole evaluation, so nested includes inside a provider's record count against your total.</p>
+    <div class="next">
+      <div><b>Count your SPF lookups in one click</b><p>The checker follows every include and shows how many of the 10 allowed lookups your record uses.</p></div>
+      <a class="btn btn-primary" href="../../dmarc-checker/">Check my SPF</a>
+    </div>
+  </article>
+</main>
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../../">All tools</a> · <a href="../../guides/">Guides</a> · <a href="../../privacy/">Privacy &amp; terms</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../../assets/hub.js"></script>
+</body>
+</html>

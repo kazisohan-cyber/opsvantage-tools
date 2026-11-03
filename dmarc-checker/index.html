@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SPF, DKIM &amp; DMARC Checker: Can Your Domain Be Spoofed? | OpsVantage Tools</title>
+<meta name="description" content="Free SPF, DKIM and DMARC checker. Enter a domain to get an email security grade, see whether it can be spoofed, find broken records and copy the exact DNS record to fix it. Also checks MTA-STS, TLS-RPT and BIMI.">
+<link rel="canonical" href="https://tools.opsvantage.net/dmarc-checker/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../assets/logo.png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="SPF, DKIM &amp; DMARC Checker: can your domain be spoofed?">
+<meta property="og:description" content="Email security grade, spoofing risk and copy-paste fixes for any domain. Free.">
+<meta property="og:url" content="https://tools.opsvantage.net/dmarc-checker/">
+<script>
+  (function(){try{var t=localStorage.getItem('ov-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/hub.css">
+<style>
+  .domain-form{display:flex;gap:10px;flex-wrap:wrap}
+  .domain-form input{flex:1 1 260px;font-size:15px}
+  .grade{width:78px;height:78px;border-radius:16px;display:grid;place-items:center;font:700 2.4rem var(--display);flex:0 0 auto;border:2px solid var(--line-2)}
+  .grade.A,.grade.B{color:var(--live);border-color:color-mix(in srgb,var(--live) 55%,transparent)}
+  .grade.C{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 55%,transparent)}
+  .grade.D,.grade.F{color:#ef4444;border-color:color-mix(in srgb,#ef4444 55%,transparent)}
+  .check{border-top:1px solid var(--line);padding:16px 0}
+  .check:first-child{border-top:0;padding-top:4px}
+  .check-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+  .check-h b{font-family:var(--display);font-size:1rem}
+  .record{font:12.5px/1.5 var(--mono);background:var(--bg-soft);border:1px solid var(--line);border-radius:8px;padding:9px 11px;word-break:break-all;margin:6px 0}
+  .fix{margin-top:10px;border:1px dashed var(--pink-line);border-radius:10px;padding:10px 12px;background:var(--pink-soft)}
+  .fix b{font-size:.84rem}
+  .fix .record{background:var(--bg)}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line-2);border-top-color:var(--pink);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:8px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){.spin{animation:none}}
+</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "SPF, DKIM & DMARC Checker",
+  "url": "https://tools.opsvantage.net/dmarc-checker/",
+  "applicationCategory": "SecurityApplication",
+  "operatingSystem": "Any (web browser)",
+  "isAccessibleForFree": true,
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "description": "Check a domain's SPF, DKIM, DMARC, MTA-STS, TLS-RPT and BIMI records, get a grade and copy-paste fixes.",
+  "publisher": { "@type": "Organization", "name": "OpsVantage", "url": "https://opsvantage.net/" }
+}
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../"><img src="../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../#tools">All tools</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="tool-head">
+    <div class="crumbs"><a href="../">Tools</a> / SPF, DKIM &amp; DMARC Checker</div>
+    <h1>SPF, DKIM &amp; DMARC <em>Checker</em></h1>
+    <p class="lead">Can someone send email pretending to be your domain? Enter a domain to get an email security grade, the records that are missing or broken, and the exact DNS record to fix each one.</p>
+    <span class="privacy-note">● DNS lookups go straight from your browser to Cloudflare's public resolver (1.1.1.1). OpsVantage sees nothing.</span>
+  </div>
+
+  <section class="panel" style="margin-bottom:18px">
+    <form class="domain-form" id="form" autocomplete="off">
+      <label for="domain" style="position:absolute;left:-9999px">Domain</label>
+      <input class="input" id="domain" type="text" inputmode="url" placeholder="example.com or name@example.com" spellcheck="false" required>
+      <button class="btn btn-primary" type="submit" id="go">Check domain</button>
+    </form>
+    <div class="opts">
+      <label for="selector">Extra DKIM selector (optional):</label>
+      <input class="input" id="selector" type="text" placeholder="e.g. s2048" style="width:180px;padding:6px 10px;font-size:13px" spellcheck="false">
+    </div>
+  </section>
+
+  <div id="result" aria-live="polite" style="padding-bottom:56px"></div>
+
+  <section class="howto">
+    <h2>What gets checked</h2>
+    <div class="cols">
+      <div><h3>SPF</h3><p>One valid record, a strict ending (-all), and fewer than 10 DNS lookups so receivers don't reject it with a permerror.</p></div>
+      <div><h3>DMARC</h3><p>The policy that tells receivers to quarantine or reject spoofed mail, whether it covers 100% of mail, and whether you get reports.</p></div>
+      <div><h3>DKIM &amp; extras</h3><p>Signing keys on 20+ common selectors (Microsoft 365, Google, SendGrid, Mailchimp and more) and their strength, plus MTA-STS, TLS-RPT and BIMI.</p></div>
+    </div>
+    <p class="related-guides sub" style="margin-top:22px">Guides: <a href="../guides/dmarc-none-to-reject/" style="color:var(--pink)">DMARC from p=none to p=reject, safely</a> · <a href="../guides/spf-too-many-dns-lookups/" style="color:var(--pink)">SPF permerror: too many DNS lookups</a></p>
+    <div class="next">
+      <div><b>Got a suspicious email claiming to be from a domain?</b><p>Paste its headers into the Email Header Analyzer to see whether it actually passed these checks.</p></div>
+      <a class="btn btn-ghost" href="../email-headers/">Analyze headers</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../">All tools</a> · <a href="../privacy/">Privacy &amp; terms</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../assets/hub.js"></script>
+<script src="../assets/lib/mailauth.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

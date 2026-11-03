@@ -1,0 +1,72 @@
+// Security-relevant Windows event IDs. sev: info | low | med | high | crit. Keyed "<id>" or "<id>@<log>" where IDs collide.
+window.OV_EVENTS = [
+  // Logon and accounts (Security log)
+  { id: 4624, log: 'Security', name: 'Successful logon', sev: 'info', mitre: 'T1078', why: 'Baseline of who logged on, from where and how. Logon type tells the story: 2 interactive, 3 network, 10 RDP, 9 new credentials (runas /netonly, also seen with pass-the-hash).', check: 'Logon type, source IP, account, and whether a run of 4625 failures came just before it.' },
+  { id: 4625, log: 'Security', name: 'Failed logon', sev: 'low', mitre: 'T1110', why: 'Many failures for one account means brute force; one source failing against many accounts means password spraying.', check: 'Status/SubStatus (0xC000006A bad password, 0xC0000064 no such user, 0xC0000234 locked), source IP, account names.' },
+  { id: 4634, log: 'Security', name: 'Logoff', sev: 'info', mitre: '', why: 'Pairs with 4624 via Logon ID to measure session length.', check: 'Logon ID to match the logon.' },
+  { id: 4647, log: 'Security', name: 'User-initiated logoff', sev: 'info', mitre: '', why: 'Interactive user logged off.', check: 'Logon ID.' },
+  { id: 4648, log: 'Security', name: 'Logon with explicit credentials', sev: 'low', mitre: 'T1078', why: 'runas, scheduled tasks or lateral-movement tools using another account\'s credentials.', check: 'Which process used which account against which target server.' },
+  { id: 4672, log: 'Security', name: 'Special privileges assigned to new logon', sev: 'info', mitre: 'T1078.002', why: 'An admin-equivalent logon. Useful to spot admin accounts used from unusual hosts.', check: 'Account, and the matching 4624 source.' },
+  { id: 4720, log: 'Security', name: 'User account created', sev: 'med', mitre: 'T1136.001', why: 'Attackers create accounts for persistence.', check: 'Who created it (Subject), the new name, and whether a change ticket exists.' },
+  { id: 4722, log: 'Security', name: 'User account enabled', sev: 'low', mitre: 'T1098', why: 'Re-enabled dormant accounts are a persistence trick.', check: 'Target account and who enabled it.' },
+  { id: 4723, log: 'Security', name: 'Password change attempt', sev: 'info', mitre: 'T1098', why: 'User changed their own password.', check: 'Account.' },
+  { id: 4724, log: 'Security', name: 'Password reset by another account', sev: 'med', mitre: 'T1098', why: 'An admin (or attacker) reset someone else\'s password, a common takeover step.', check: 'Who reset whose password, and when.' },
+  { id: 4725, log: 'Security', name: 'User account disabled', sev: 'low', mitre: 'T1531', why: 'Mass disabling can be sabotage or ransomware prep.', check: 'How many accounts, by whom.' },
+  { id: 4726, log: 'Security', name: 'User account deleted', sev: 'med', mitre: 'T1531', why: 'Covering tracks or sabotage.', check: 'Target account and actor.' },
+  { id: 4728, log: 'Security', name: 'Member added to global security group', sev: 'med', mitre: 'T1098', why: 'Privilege escalation when the group is Domain Admins or another admin group.', check: 'Group name, member added, actor.' },
+  { id: 4732, log: 'Security', name: 'Member added to local security group', sev: 'med', mitre: 'T1098', why: 'Adding to local Administrators or Remote Desktop Users gives persistence.', check: 'Group name, member added, actor.' },
+  { id: 4756, log: 'Security', name: 'Member added to universal security group', sev: 'med', mitre: 'T1098', why: 'Enterprise Admins / Schema Admins are universal groups.', check: 'Group name, member added, actor.' },
+  { id: 4738, log: 'Security', name: 'User account changed', sev: 'low', mitre: 'T1098', why: 'Look for "Don\'t require preauth" (AS-REP roasting) or password-never-expires being set.', check: 'Changed attributes, especially UserAccountControl.' },
+  { id: 4740, log: 'Security', name: 'Account locked out', sev: 'low', mitre: 'T1110', why: 'Brute force, or an old password cached on a phone or mapped drive.', check: 'Caller Computer Name is where the bad attempts come from.' },
+  { id: 4767, log: 'Security', name: 'Account unlocked', sev: 'info', mitre: '', why: 'Helpdesk or self-service unlock.', check: 'Actor.' },
+  { id: 4765, log: 'Security', name: 'SID History added to an account', sev: 'high', mitre: 'T1134.005', why: 'SID History injection gives hidden admin rights.', check: 'Unless you are mid-migration, treat as compromise.' },
+  { id: 4766, log: 'Security', name: 'SID History add attempt failed', sev: 'high', mitre: 'T1134.005', why: 'Someone tried SID History injection.', check: 'Actor and target.' },
+  { id: 4794, log: 'Security', name: 'DSRM administrator password set', sev: 'high', mitre: 'T1098', why: 'The DSRM account can be used as a domain controller backdoor.', check: 'Who set it and whether it was planned.' },
+  // Kerberos / NTLM
+  { id: 4768, log: 'Security', name: 'Kerberos TGT requested', sev: 'info', mitre: 'T1558', why: 'Pre-auth type 0 means no pre-authentication (AS-REP roastable account).', check: 'Result code, pre-auth type, client IP.' },
+  { id: 4769, log: 'Security', name: 'Kerberos service ticket requested', sev: 'info', mitre: 'T1558.003', why: 'Bursts of requests with encryption 0x17 (RC4) for service accounts are Kerberoasting.', check: 'Ticket Encryption Type, service name, account, volume per account.' },
+  { id: 4771, log: 'Security', name: 'Kerberos pre-authentication failed', sev: 'low', mitre: 'T1110', why: 'The Kerberos version of a failed logon: brute force or spraying against a DC.', check: 'Failure code 0x18 = bad password; client IP; number of accounts.' },
+  { id: 4776, log: 'Security', name: 'NTLM credential validation', sev: 'info', mitre: 'T1550.002', why: 'Error 0xC000006A in bulk is NTLM brute force; NTLM where Kerberos is expected can mean pass-the-hash.', check: 'Error code, workstation, account.' },
+  // Policy, logs and tampering
+  { id: 1102, log: 'Security', name: 'Security audit log cleared', sev: 'crit', mitre: 'T1070.001', why: 'Attackers clear the Security log to hide what they did. Almost never legitimate on servers.', check: 'Who cleared it, and what happened in the hours before (forward logs to a SIEM).' },
+  { id: 104, log: 'System', name: 'Event log cleared', sev: 'high', mitre: 'T1070.001', why: 'A System or application log was cleared.', check: 'Which log, which account.' },
+  { id: 4719, log: 'Security', name: 'System audit policy changed', sev: 'high', mitre: 'T1562.002', why: 'Turning off auditing blinds the SOC before an attack.', check: 'Which categories were disabled and by whom.' },
+  { id: 4739, log: 'Security', name: 'Domain policy changed', sev: 'med', mitre: 'T1484', why: 'Password or lockout policy weakened.', check: 'Changed values and actor.' },
+  { id: 4662, log: 'Security', name: 'Operation performed on an AD object', sev: 'info', mitre: 'T1003.006', why: 'With the replication GUIDs (1131f6aa / 1131f6ad / 89e95b76) from a non-DC account, this is DCSync.', check: 'Properties GUIDs and the account; only DCs should replicate.' },
+  { id: 5136, log: 'Security', name: 'Directory object modified', sev: 'low', mitre: 'T1484.001', why: 'GPO and AdminSDHolder changes show up here.', check: 'Object DN, attribute, actor.' },
+  // Processes, services, tasks
+  { id: 4688, log: 'Security', name: 'New process created', sev: 'info', mitre: 'T1059', why: 'With command-line auditing on, this shows encoded PowerShell, LOLBins and ransomware commands.', check: 'Process Command Line and parent process.' },
+  { id: 4697, log: 'Security', name: 'Service installed', sev: 'med', mitre: 'T1543.003', why: 'PsExec, Cobalt Strike and many RATs install a service.', check: 'Service file name: temp folders, cmd /c, PowerShell or random names are bad.' },
+  { id: 7045, log: 'System', name: 'New service installed', sev: 'med', mitre: 'T1543.003', why: 'The System-log version of a new service, often PsExec (PSEXESVC) or malware.', check: 'Service name and image path.' },
+  { id: 7040, log: 'System', name: 'Service start type changed', sev: 'low', mitre: 'T1562.001', why: 'Disabling security services (Defender, backup agents) before ransomware.', check: 'Which service and new start type.' },
+  { id: 7036, log: 'System', name: 'Service state changed', sev: 'info', mitre: '', why: 'Service started or stopped. Look for security or backup services stopping.', check: 'Service name.' },
+  { id: 4698, log: 'Security', name: 'Scheduled task created', sev: 'med', mitre: 'T1053.005', why: 'Classic persistence.', check: 'Task name, command and the account it runs as.' },
+  { id: 4699, log: 'Security', name: 'Scheduled task deleted', sev: 'low', mitre: 'T1070', why: 'Cleanup after a one-time task.', check: 'Task name and actor.' },
+  { id: 4702, log: 'Security', name: 'Scheduled task updated', sev: 'low', mitre: 'T1053.005', why: 'Existing task hijacked to run a new command.', check: 'New action.' },
+  // Network and shares
+  { id: 5140, log: 'Security', name: 'Network share accessed', sev: 'info', mitre: 'T1021.002', why: 'Access to ADMIN$ or C$ from a workstation is lateral movement.', check: 'Share name and source IP.' },
+  { id: 5145, log: 'Security', name: 'Share object access check', sev: 'info', mitre: 'T1021.002', why: 'Detailed share access; PsExec writes to ADMIN$.', check: 'Share and relative target name.' },
+  { id: 5156, log: 'Security', name: 'Windows Filtering Platform allowed a connection', sev: 'info', mitre: '', why: 'Network connection log; noisy but useful for C2 hunting.', check: 'Destination address and process.' },
+  // PowerShell
+  { id: 4103, log: 'PowerShell', name: 'PowerShell module logging', sev: 'info', mitre: 'T1059.001', why: 'Pipeline execution details.', check: 'Command invocation names.' },
+  { id: 4104, log: 'PowerShell', name: 'PowerShell script block logged', sev: 'low', mitre: 'T1059.001', why: 'The decoded script that actually ran. Best single source for malicious PowerShell.', check: 'Script text: DownloadString, IEX, FromBase64String, Mimikatz, AMSI bypass.' },
+  { id: 400, log: 'PowerShell', name: 'PowerShell engine started', sev: 'info', mitre: 'T1059.001', why: 'HostApplication shows the full command line, including -EncodedCommand.', check: 'HostApplication, and EngineVersion 2.0 (downgrade attack).' },
+  // RDP
+  { id: 1149, log: 'RDP', name: 'RDP authentication succeeded', sev: 'info', mitre: 'T1021.001', why: 'TerminalServices-RemoteConnectionManager: who connected over RDP and from where.', check: 'Source IP, especially public IPs.' },
+  { id: 21, log: 'RDP', name: 'RDP session logon succeeded', sev: 'info', mitre: 'T1021.001', why: 'TerminalServices-LocalSessionManager session logon.', check: 'Source network address.' },
+  // Defender
+  { id: 1116, log: 'Defender', name: 'Defender detected malware', sev: 'high', mitre: '', why: 'Microsoft Defender found a threat.', check: 'Threat name, path and whether 1117 (action taken) followed.' },
+  { id: 1117, log: 'Defender', name: 'Defender took action on malware', sev: 'med', mitre: '', why: 'Remediation result for a detection.', check: 'Action and result; failure means it is still there.' },
+  { id: 5001, log: 'Defender', name: 'Defender real-time protection disabled', sev: 'high', mitre: 'T1562.001', why: 'Attackers turn off Defender before running tools.', check: 'Who or what disabled it, and what ran afterwards.' },
+  { id: 5007, log: 'Defender', name: 'Defender configuration changed', sev: 'med', mitre: 'T1562.001', why: 'Exclusions added for a folder or process are a common bypass.', check: 'Old and new value; look for Exclusions.' },
+  // Sysmon
+  { id: 1, log: 'Sysmon', name: 'Sysmon: process creation', sev: 'info', mitre: 'T1059', why: 'Full command line, hashes and parent process.', check: 'CommandLine, ParentImage, Hashes.' },
+  { id: 3, log: 'Sysmon', name: 'Sysmon: network connection', sev: 'info', mitre: 'T1071', why: 'Which process talked to which IP and port.', check: 'Image, DestinationIp, DestinationPort.' },
+  { id: 7, log: 'Sysmon', name: 'Sysmon: image loaded', sev: 'info', mitre: 'T1574.002', why: 'DLL side-loading hunts.', check: 'Unsigned DLLs loaded by signed binaries.' },
+  { id: 8, log: 'Sysmon', name: 'Sysmon: CreateRemoteThread', sev: 'med', mitre: 'T1055', why: 'Process injection.', check: 'SourceImage and TargetImage.' },
+  { id: 10, log: 'Sysmon', name: 'Sysmon: process access', sev: 'info', mitre: 'T1003.001', why: 'Access to lsass.exe is credential dumping (Mimikatz, procdump).', check: 'TargetImage lsass.exe, GrantedAccess (0x1010, 0x1410, 0x1FFFFF), SourceImage.' },
+  { id: 11, log: 'Sysmon', name: 'Sysmon: file created', sev: 'info', mitre: '', why: 'Dropped payloads and ransom notes.', check: 'TargetFilename in Temp, AppData, Startup.' },
+  { id: 12, log: 'Sysmon', name: 'Sysmon: registry object added or deleted', sev: 'info', mitre: 'T1547.001', why: 'Run-key persistence.', check: 'TargetObject under ...\\CurrentVersion\\Run.' },
+  { id: 13, log: 'Sysmon', name: 'Sysmon: registry value set', sev: 'info', mitre: 'T1547.001', why: 'Run keys, services, Defender settings.', check: 'TargetObject and Details.' },
+  { id: 22, log: 'Sysmon', name: 'Sysmon: DNS query', sev: 'info', mitre: 'T1071.004', why: 'Domains each process resolved.', check: 'QueryName against threat intel.' }
+];

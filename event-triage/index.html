@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Windows Event Triage: Event ID Lookup &amp; Log Analyzer | OpsVantage Tools</title>
+<meta name="description" content="Free Windows event log triage. Look up what a Windows, Sysmon, PowerShell or Defender event ID means, or paste exported events (CSV or XML) to flag brute force, password spraying, new admins, malicious services, encoded PowerShell, Kerberoasting, DCSync and log clearing. Runs in your browser.">
+<link rel="canonical" href="https://tools.opsvantage.net/event-triage/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../assets/logo.png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Windows Event Triage: event ID lookup &amp; log analyzer">
+<meta property="og:description" content="Look up event IDs or paste exported logs to flag brute force, new admins, encoded PowerShell and more. Private, in-browser, free.">
+<meta property="og:url" content="https://tools.opsvantage.net/event-triage/">
+<script>
+  (function(){try{var t=localStorage.getItem('ov-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/hub.css">
+<style>
+  .ev-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:14px}
+  @media (max-width:820px){.ev-cards{grid-template-columns:1fr}}
+  .ev{background:var(--bg-soft);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .ev-h{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:6px}
+  .ev-h b{font-family:var(--display)}
+  .ev p{font-size:.88rem;color:var(--muted);margin-top:4px}
+  .ev p strong{color:var(--text);font-weight:600}
+</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Windows Event Triage",
+  "url": "https://tools.opsvantage.net/event-triage/",
+  "applicationCategory": "SecurityApplication",
+  "operatingSystem": "Any (web browser)",
+  "isAccessibleForFree": true,
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "description": "Windows, Sysmon, PowerShell and Defender event ID lookup plus an in-browser analyzer for exported event logs.",
+  "publisher": { "@type": "Organization", "name": "OpsVantage", "url": "https://opsvantage.net/" }
+}
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../"><img src="../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../#tools">All tools</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="tool-head">
+    <div class="crumbs"><a href="../">Tools</a> / Windows Event Triage</div>
+    <h1>Windows Event <em>Triage</em></h1>
+    <p class="lead">Look up what a Windows event ID means and why it matters, or paste exported events to have brute force, password spraying, new admin accounts, malicious services, encoded PowerShell, Kerberoasting, DCSync and log clearing flagged for you.</p>
+    <span class="privacy-note">● Runs in your browser. Logs never leave your device.</span>
+  </div>
+
+  <section class="panel" style="margin-bottom:18px" aria-labelledby="lk-h">
+    <div class="panel-h"><h2 id="lk-h">Event ID lookup</h2><span class="sub" style="margin:0;font-size:.82rem">Security, System, Sysmon, PowerShell, RDP, Defender</span></div>
+    <label for="lookup" style="position:absolute;left:-9999px">Event ID or keyword</label>
+    <input class="input" id="lookup" type="text" placeholder="Event ID or keyword, e.g. 4625, kerberos, service, lsass" spellcheck="false">
+    <div class="ev-cards" id="cards"></div>
+  </section>
+
+  <div class="workspace">
+    <section class="panel" aria-labelledby="in-h">
+      <div class="panel-h">
+        <h2 id="in-h">Analyze exported events</h2>
+        <div class="row-actions" style="margin:0">
+          <label class="btn btn-ghost btn-sm" for="file" style="cursor:pointer">Open file</label>
+          <input type="file" id="file" accept=".csv,.xml,.txt" hidden>
+          <button class="btn btn-ghost btn-sm" type="button" id="sample">Load sample</button>
+          <button class="btn btn-ghost btn-sm" type="button" id="clear">Clear</button>
+        </div>
+      </div>
+      <label for="input" style="position:absolute;left:-9999px">Exported events</label>
+      <textarea class="input" id="input" spellcheck="false" placeholder="Paste CSV or XML exported events, or drop a file here.&#10;&#10;Event Viewer: right-click the log > Save All Events As > CSV or XML&#10;PowerShell: Get-WinEvent -LogName Security -MaxEvents 5000 | Export-Csv events.csv&#10;wevtutil: wevtutil qe Security /c:5000 /f:xml > events.xml&#10;&#10;.evtx files are binary: export them to CSV or XML first."></textarea>
+      <div class="row-actions">
+        <button class="btn btn-primary btn-sm" type="button" id="analyze">Analyze events</button>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="out-h" aria-live="polite">
+      <div class="panel-h">
+        <h2 id="out-h">Findings</h2>
+        <button class="btn btn-ghost btn-sm" type="button" id="note" disabled>Copy ticket note</button>
+      </div>
+      <div id="out"><p class="empty">Paste exported events and press Analyze.</p></div>
+    </section>
+  </div>
+
+  <section class="panel" id="breakdown" hidden style="margin-bottom:56px">
+    <div class="panel-h"><h2>Event ID breakdown</h2></div>
+    <div class="table-wrap"><table class="data" id="ids"></table></div>
+  </section>
+
+  <section class="howto">
+    <h2>What it detects</h2>
+    <div class="cols">
+      <div><h3>Credential attacks</h3><p>Brute force, password spraying, a success right after failures, lockouts, Kerberoasting (RC4 service tickets), DCSync and LSASS access.</p></div>
+      <div><h3>Persistence &amp; privilege</h3><p>New accounts, members added to admin groups, new services with suspicious paths, scheduled tasks, SID History and DSRM changes.</p></div>
+      <div><h3>Execution &amp; tampering</h3><p>Encoded PowerShell, download cradles, Mimikatz, AMSI bypass, LOLBins, shadow copy deletion, Defender disabled and logs cleared.</p></div>
+    </div>
+    <p class="related-guides sub" style="margin-top:22px">Guides: <a href="../guides/event-id-4625/" style="color:var(--pink)">Event ID 4625: failed logons explained</a> · <a href="../guides/windows-logon-types/" style="color:var(--pink)">Windows logon types explained</a></p>
+    <div class="next">
+      <div><b>Found IPs or hashes worth checking?</b><p>IOC Triage gives a verdict for each one from 15 threat-intel sources with a right-click.</p></div>
+      <a class="btn btn-ghost" href="https://chromewebstore.google.com/detail/dncgneacahomieionjkaofmfnojlkfmc">Add to Chrome</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../">All tools</a> · <a href="../privacy/">Privacy &amp; terms</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../assets/hub.js"></script>
+<script src="../assets/lib/ioc.js"></script>
+<script src="events-db.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

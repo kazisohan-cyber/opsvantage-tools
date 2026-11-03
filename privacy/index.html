@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy &amp; Terms | OpsVantage Tools</title>
+<meta name="description" content="How OpsVantage Tools handle your data, including the read-only Microsoft 365 Posture Scanner, and the terms for using them.">
+<link rel="canonical" href="https://tools.opsvantage.net/privacy/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../assets/logo.png">
+<script src="../assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/hub.css">
+<style>
+  .doc{max-width:760px;padding-bottom:64px}
+  .doc h2{margin:34px 0 10px}
+  .doc h3{font-family:var(--display);font-size:1.02rem;margin:20px 0 6px}
+  .doc p,.doc li{color:var(--muted);font-size:.97rem}
+  .doc p{margin:8px 0}
+  .doc ul{margin:8px 0 8px 20px}
+  .doc li{margin:4px 0}
+  .doc strong{color:var(--text)}
+  .doc .toc{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  .doc table.data td:first-child{font-family:var(--mono);font-size:.78rem;white-space:nowrap}
+</style>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../"><img src="../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../#tools">All tools</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap doc">
+  <div class="tool-head">
+    <div class="crumbs"><a href="../">Tools</a> / Privacy &amp; terms</div>
+    <h1>Privacy policy <em>&amp; terms</em></h1>
+    <p class="lead">Last updated 2 November 2026. Plain language first: the tools process your data in your browser, OpsVantage does not run a server that receives it, and we do not sell or share anything.</p>
+    <div class="toc"><a class="btn btn-ghost btn-sm" href="#privacy">Privacy policy</a><a class="btn btn-ghost btn-sm" href="#scanner">M365 Posture Scanner</a><a class="btn btn-ghost btn-sm" href="#terms">Terms of use</a></div>
+  </div>
+
+  <h2 id="privacy">Privacy policy</h2>
+  <p>This policy covers the website <strong>tools.opsvantage.net</strong> and the tools on it ("the tools"), provided by OpsVantage ("we"). The IOC Triage browser extension has its <a href="https://github.com/kazisohan-cyber/soclens/blob/main/PRIVACY.md" style="color:var(--pink)">own privacy policy</a>.</p>
+
+  <h3>What the tools do with what you paste or upload</h3>
+  <p>The IOC Extractor, Email Header Analyzer, Windows Event Triage and M365 Sign-in Review run entirely in your browser. Text you paste and files you open are processed on your device and are <strong>not sent to us or anyone else</strong>. Closing or reloading the page discards them.</p>
+
+  <h3>Tools that make network requests</h3>
+  <ul>
+    <li><strong>SPF, DKIM &amp; DMARC Checker</strong>: the domain names you check are looked up directly from your browser through Cloudflare's public DNS resolver (1.1.1.1), falling back to Google Public DNS. Those providers receive the DNS queries under their own privacy policies. We do not.</li>
+    <li><strong>M365 Posture Scanner</strong>: talks directly to Microsoft. See the section below.</li>
+  </ul>
+
+  <h3>What is stored in your browser</h3>
+  <p>We set no cookies. The site stores two small preferences in your browser's local storage: your light or dark theme choice, and, if you type one, the "Prepared by" name for scanner reports. During a Microsoft sign-in, a one-time code verifier is held in session storage and deleted as soon as you return.</p>
+
+  <h3>Hosting, fonts and analytics</h3>
+  <p>The site is hosted on <strong>Cloudflare Pages</strong>. Like any web host, Cloudflare processes connection data such as your IP address and browser type to deliver the pages and protect them from attacks, and may count anonymous, cookie-free page views (Cloudflare Web Analytics). Fonts are loaded from <strong>Google Fonts</strong>, which receives your IP address when the fonts download. The M365 Posture Scanner page blocks all third-party scripts with a strict Content Security Policy.</p>
+
+  <h3>What we do not do</h3>
+  <ul>
+    <li>No accounts, advertising, or tracking across sites.</li>
+    <li>No selling, renting or sharing of personal data.</li>
+    <li>No use of your data to train AI models.</li>
+  </ul>
+
+  <h2 id="scanner">M365 Posture Scanner</h2>
+  <p>The scanner reviews the security configuration of a Microsoft 365 / Microsoft Entra ID tenant when someone with access to that tenant signs in.</p>
+  <h3>How the data flows</h3>
+  <ul>
+    <li>You sign in with Microsoft. Microsoft issues a short-lived access token directly to your browser tab. <strong>No refresh token is requested</strong>, and the token is kept in memory only, never written to storage.</li>
+    <li>Your browser calls Microsoft Graph and builds the report on your device. <strong>Tenant data never reaches an OpsVantage server</strong>; there is no backend that could receive it.</li>
+    <li>For each verified email domain, the scanner runs the same public DNS lookups as the DMARC Checker.</li>
+    <li>Reports exist only on your screen and in files you choose to download. Closing the tab ends the session.</li>
+  </ul>
+  <h3>Permissions requested (delegated, read-only)</h3>
+  <div class="table-wrap"><table class="data">
+    <tr><td>User.Read</td><td>Sign you in and read your basic profile</td></tr>
+    <tr><td>Directory.Read.All</td><td>Users, guests, groups, admin roles and app consents</td></tr>
+    <tr><td>Policy.Read.All</td><td>Conditional Access, security defaults, consent and guest settings</td></tr>
+    <tr><td>AuditLog.Read.All</td><td>Last sign-in dates and the MFA registration report</td></tr>
+    <tr><td>UserAuthenticationMethod.Read.All</td><td>Which MFA methods users have registered</td></tr>
+    <tr><td>SecurityEvents.Read.All</td><td>Microsoft Secure Score</td></tr>
+    <tr><td>IdentityRiskyUser.Read.All</td><td>Users flagged at risk by Entra ID Protection</td></tr>
+  </table></div>
+  <p>Delegated permissions only work within what the signed-in account can already see. The scanner cannot change, create or delete anything.</p>
+  <h3>Removing access</h3>
+  <p>A tenant administrator can remove the scanner at any time: Microsoft Entra admin center &gt; Enterprise applications &gt; "OpsVantage M365 Posture Scanner" &gt; Properties &gt; Delete. This revokes the consent for the whole tenant.</p>
+
+  <h2 id="terms">Terms of use</h2>
+  <h3>Authorised use only</h3>
+  <p>Only scan Microsoft 365 tenants, domains, logs and data that you own or are authorised to assess. If you are a service provider, make sure your agreement with the client covers security reviews.</p>
+  <h3>No warranty</h3>
+  <p>The tools are provided free of charge, "as is" and without warranty of any kind. Findings are automated and can be incomplete or wrong; verify them before acting, and do not treat them as a substitute for a professional security assessment or audit.</p>
+  <h3>Limitation of liability</h3>
+  <p>To the extent the law allows, OpsVantage is not liable for any loss or damage arising from use of the tools, including decisions made on the basis of their results.</p>
+  <h3>Acceptable use</h3>
+  <p>Do not use the tools to attack, overload or probe systems you have no permission to test, and do not try to disrupt the site.</p>
+  <h3>Changes</h3>
+  <p>We may update this page; the date at the top shows the latest version. Material changes affecting the M365 Posture Scanner will be noted on the scanner page.</p>
+  <h3>Contact</h3>
+  <p>Questions about privacy or these terms: <a href="mailto:hello@opsvantage.net" style="color:var(--pink)">hello@opsvantage.net</a>.</p>
+</main>
+
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../">All tools</a> · <a href="../privacy/">Privacy &amp; terms</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../assets/hub.js"></script>
+</body>
+</html>

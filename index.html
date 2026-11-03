@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpsVantage Tools: Free SOC &amp; Email Security Tools</title>
+<meta name="description" content="Free, private security tools for SOC analysts, IT admins and MSPs: IOC extraction, email header analysis, SPF/DKIM/DMARC checks, Windows event triage and Microsoft 365 sign-in review. Everything runs in your browser.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://tools.opsvantage.net/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="assets/logo.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="OpsVantage Tools">
+<meta property="og:title" content="OpsVantage Tools: free SOC &amp; email security tools">
+<meta property="og:description" content="Small, private tools for everyday SOC work. Your data never leaves your browser.">
+<meta property="og:url" content="https://tools.opsvantage.net/">
+<script>
+  (function(){try{var t=localStorage.getItem('ov-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/hub.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "OpsVantage Tools",
+  "url": "https://tools.opsvantage.net/",
+  "description": "Free, private security tools for SOC analysts, IT admins and MSPs.",
+  "publisher": { "@type": "Organization", "name": "OpsVantage", "url": "https://opsvantage.net/" }
+}
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="./"><img src="assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="#tools">Tools</a>
+      <a class="link opt" href="guides/">Guides</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <span class="eyebrow">Free security tools</span>
+      <h1>Small tools for <em>everyday SOC work</em>.</h1>
+      <p class="lead">IOC extraction, email header analysis, DMARC checks, Windows event triage and Microsoft 365 sign-in review. Built by a working ops engineer for analysts, IT admins and MSPs. No account, no upload, no cookies.</p>
+      <div class="cta">
+        <a class="btn btn-primary" href="#tools">Browse the tools</a>
+        <a class="btn btn-ghost" href="https://chromewebstore.google.com/detail/dncgneacahomieionjkaofmfnojlkfmc">Add IOC Triage to Chrome</a>
+      </div>
+      <div class="trust">
+        <span>Runs in your browser</span><span>Nothing stored on a server</span><span>Free, no sign-up</span><span>Open source extension</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="tools">
+    <div class="wrap">
+      <h2>Tools</h2>
+      <p class="sub">Each one solves a single job well, runs in your browser, and links to the next step.</p>
+
+      <div class="tools">
+        <a class="tool" href="m365-posture/" id="m365-posture" style="border-color:var(--pink-line)">
+          <div class="top">
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><path d="m14 17 2 2 4-4"/></svg></span>
+            <span class="tag live">New</span>
+          </div>
+          <h3>M365 Posture Scanner</h3>
+          <p>Sign in with Microsoft for a graded, read-only review of a tenant: MFA coverage, admins, Conditional Access, risky app consents, guests and email security, with fixes and a client-ready PDF.</p>
+          <div class="meta"><span>MSPs · M365 admins</span><span>Read-only</span></div>
+        </a>
+
+        <a class="tool" href="https://chromewebstore.google.com/detail/dncgneacahomieionjkaofmfnojlkfmc" id="ioc-triage">
+          <div class="top">
+            <span class="ico"><img src="assets/ioc-triage.png" alt="" width="22" height="22"></span>
+            <span class="tag live">Chrome Web Store</span>
+          </div>
+          <h3>IOC Triage</h3>
+          <p>Browser extension. Right-click any IP, domain, URL, hash or CVE for an explainable verdict from 15 intel sources, plus ticket notes and phishing protection.</p>
+          <div class="meta"><span>Chrome · Edge</span><span>Free · Open source</span></div>
+        </a>
+
+        <a class="tool" href="ioc-extractor/" id="ioc-extractor">
+          <div class="top">
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7V4h3M20 7V4h-3M4 17v3h3M20 17v3h-3"/><path d="M8 12h8M12 8v8"/></svg></span>
+            <span class="tag live">Live</span>
+          </div>
+          <h3>IOC Extractor</h3>
+          <p>Paste a report, alert or email. Pull out every IP, domain, URL, hash and email address, then defang or refang them in one click.</p>
+          <div class="meta"><span>Analysts</span><span>In-browser</span></div>
+        </a>
+
+        <a class="tool" href="email-headers/" id="email-headers">
+          <div class="top">
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></span>
+            <span class="tag live">Live</span>
+          </div>
+          <h3>Email Header Analyzer</h3>
+          <p>Paste raw headers to see the delivery path, SPF, DKIM and DMARC results, and the signs of spoofing or business email compromise.</p>
+          <div class="meta"><span>SOC · IT admins</span><span>In-browser</span></div>
+        </a>
+
+        <a class="tool" href="dmarc-checker/" id="dmarc-checker">
+          <div class="top">
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg></span>
+            <span class="tag live">Live</span>
+          </div>
+          <h3>SPF / DKIM / DMARC Checker</h3>
+          <p>Enter a domain and get a plain-language score, what is broken, and the exact DNS record to fix it.</p>
+          <div class="meta"><span>IT admins · MSPs</span></div>
+        </a>
+
+        <a class="tool" href="event-triage/" id="event-ids">
+          <div class="top">
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16M4 10h16M4 15h10M4 20h7"/><circle cx="18" cy="18" r="3"/></svg></span>
+            <span class="tag live">Live</span>
+          </div>
+          <h3>Windows Event Triage</h3>
+          <p>Look up what an event ID means, or paste exported events and see the suspicious ones highlighted: brute force, new services, encoded PowerShell.</p>
+          <div class="meta"><span>Junior analysts</span><span>In-browser</span></div>
+        </a>
+
+        <a class="tool" href="m365-signins/" id="m365-signins">
+          <div class="top">
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></span>
+            <span class="tag live">Live</span>
+          </div>
+          <h3>M365 Sign-in Review</h3>
+          <p>Load an Entra ID sign-in log export and spot impossible travel, legacy authentication, MFA failures and logins from unexpected countries.</p>
+          <div class="meta"><span>MSPs · M365 admins</span><span>In-browser</span></div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="guides">
+    <div class="wrap">
+      <h2>Guides</h2>
+      <p class="sub">Short, practical write-ups: what an alert or record means, how to investigate it and how to fix it.</p>
+      <div class="guide-list">
+        <a class="guide-card" href="guides/event-id-4625/"><h3>Event ID 4625: failed logons explained</h3><p>Logon types, status codes, brute force vs password spraying.</p><span>Read →</span></a>
+        <a class="guide-card" href="guides/read-email-headers/"><h3>How to read email headers to spot phishing</h3><p>Received lines, SPF, DKIM, DMARC and BEC red flags.</p><span>Read →</span></a>
+        <a class="guide-card" href="guides/dmarc-none-to-reject/"><h3>DMARC from p=none to p=reject, safely</h3><p>A step-by-step rollout that won't block your own email.</p><span>Read →</span></a>
+        <a class="guide-card" href="guides/m365-impossible-travel/"><h3>Microsoft 365 impossible travel</h3><p>Rule out VPN false positives and respond when it's real.</p><span>Read →</span></a>
+      </div>
+      <p style="margin-top:16px"><a href="guides/" style="color:var(--pink)">All guides →</a></p>
+    </div>
+  </section>
+
+  <section class="block" id="privacy">
+    <div class="wrap">
+      <h2>How these tools treat your data</h2>
+      <p class="sub">Security people paste sensitive things. These tools are built so you never have to wonder where that went.</p>
+      <div class="pillars">
+        <div class="pillar"><h3>Processed in your browser</h3><p>Pasted text and uploaded logs are analysed on your machine. They are not sent to or stored on an OpsVantage server.</p></div>
+        <div class="pillar"><h3>Only lookups leave</h3><p>Tools that need the internet, such as a DNS check, send just that query, and each tool says so on the page.</p></div>
+        <div class="pillar"><h3>No accounts, no cookies, no ads</h3><p>No sign-up, no ad scripts, no cross-site tracking. Our host counts anonymous page views; the <a href="privacy/" style="color:var(--pink)">privacy policy</a> has the details.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <div class="notify">
+        <div>
+          <h2>Get the next tool first</h2>
+          <p>A short email when a new tool ships, plus one practical SOC tip. The newsletter is launching soon; until then, follow the project on GitHub.</p>
+        </div>
+        <a class="btn btn-ghost" href="https://github.com/kazisohan-cyber/soclens">Follow on GitHub</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="privacy/">Privacy &amp; terms</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="assets/hub.js"></script>
+</body>
+</html>
