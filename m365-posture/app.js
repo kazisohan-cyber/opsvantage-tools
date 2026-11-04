@@ -14,8 +14,24 @@
     STANDARDPACK: 'Office 365 E1', SPE_F1: 'Microsoft 365 F3', DESKLESSPACK: 'Office 365 F3', EXCHANGESTANDARD: 'Exchange Online (Plan 1)', EXCHANGEENTERPRISE: 'Exchange Online (Plan 2)',
     AAD_PREMIUM: 'Microsoft Entra ID P1', AAD_PREMIUM_P2: 'Microsoft Entra ID P2', EMS: 'Enterprise Mobility + Security E3', EMSPREMIUM: 'Enterprise Mobility + Security E5',
     DEVELOPERPACK_E5: 'Microsoft 365 E5 Developer', POWER_BI_STANDARD: 'Power BI (free)', FLOW_FREE: 'Power Automate (free)', TEAMS_EXPLORATORY: 'Teams Exploratory',
-    MICROSOFT_BUSINESS_CENTER: 'Microsoft Business Center', WINDOWS_STORE: 'Windows Store for Business', Microsoft_Teams_Exploratory_Dept: 'Teams Exploratory'
+    MICROSOFT_BUSINESS_CENTER: 'Microsoft Business Center', WINDOWS_STORE: 'Windows Store for Business', Microsoft_Teams_Exploratory_Dept: 'Teams Exploratory',
+    Microsoft_365_E3: 'Microsoft 365 E3 (no Teams)', Microsoft_365_E5: 'Microsoft 365 E5 (no Teams)', O365_w_o_Teams_Bundle_E3: 'Office 365 E3 (no Teams)',
+    SPE_E3_USGOV_GCCHIGH: 'Microsoft 365 E3 (GCC High)', SPE_F5_SECCOMP: 'Microsoft 365 F5 Security + Compliance', IDENTITY_THREAT_PROTECTION: 'Microsoft 365 E5 Security',
+    Microsoft_Teams_Premium: 'Teams Premium', MCOEV: 'Teams Phone Standard', MCOMEETADV: 'Microsoft 365 Audio Conferencing', MCOPSTN1: 'Teams Domestic Calling Plan',
+    Microsoft_Teams_Rooms_Pro: 'Teams Rooms Pro', Microsoft_Teams_Rooms_Basic: 'Teams Rooms Basic', PHONESYSTEM_VIRTUALUSER: 'Teams Phone Resource Account (free)',
+    PROJECTPROFESSIONAL: 'Project Plan 3', PROJECTPREMIUM: 'Project Plan 5', PROJECT_P1: 'Project Plan 1', VISIOCLIENT: 'Visio Plan 2', VISIOONLINE_PLAN1: 'Visio Plan 1',
+    POWER_BI_PRO: 'Power BI Pro', PBI_PREMIUM_PER_USER: 'Power BI Premium Per User', POWERAPPS_PER_USER: 'Power Apps Premium', FLOW_PER_USER: 'Power Automate Premium',
+    POWERAPPS_DEV: 'Power Apps Developer (free)', POWERAPPS_VIRAL: 'Power Apps trial (free)', POWER_PAGES_VTRIAL_FOR_MAKERS: 'Power Pages trial (free)',
+    CCIBOTS_PRIVPREV_VIRAL: 'Copilot Studio trial (free)', STREAM: 'Microsoft Stream trial', FORMS_PRO: 'Dynamics 365 Customer Voice trial', RIGHTSMANAGEMENT_ADHOC: 'Rights Management ad hoc (free)',
+    DYN365_ENTERPRISE_SALES: 'Dynamics 365 Sales Enterprise', DYN365_ENTERPRISE_CUSTOMER_SERVICE: 'Dynamics 365 Customer Service Enterprise', DYN365_TEAM_MEMBERS: 'Dynamics 365 Team Members',
+    INTUNE_A: 'Microsoft Intune Plan 1', ATP_ENTERPRISE: 'Defender for Office 365 (Plan 1)', THREAT_INTELLIGENCE: 'Defender for Office 365 (Plan 2)',
+    WIN_DEF_ATP: 'Defender for Endpoint P2', MDATP_XPLAT: 'Defender for Endpoint P2', DEFENDER_ENDPOINT_P1: 'Defender for Endpoint P1', Win10_VDA_E3: 'Windows Enterprise E3', WIN10_VDA_E5: 'Windows Enterprise E5',
+    EXCHANGEDESKLESS: 'Exchange Online Kiosk', EXCHANGEARCHIVE_ADDON: 'Exchange Online Archiving', Microsoft_365_Copilot: 'Microsoft 365 Copilot'
   };
+  // Free, trial and self-service ("viral") SKUs come with huge or arbitrary seat counts. Their unused seats are not money spent,
+  // so the licence table shows them last and without an unused figure.
+  var FREE_SKU = /^(POWER_BI_STANDARD|FLOW_FREE|TEAMS_EXPLORATORY|Microsoft_Teams_Exploratory_Dept|POWERAPPS_DEV|POWERAPPS_VIRAL|POWER_PAGES_VTRIAL_FOR_MAKERS|CCIBOTS_PRIVPREV_VIRAL|STREAM|FORMS_PRO|RIGHTSMANAGEMENT_ADHOC|MICROSOFT_BUSINESS_CENTER|WINDOWS_STORE|PHONESYSTEM_VIRTUALUSER|DEVELOPERPACK_E5)$|_VIRAL$|TRIAL|_FREE$/i;
+  function freeSku(s) { return FREE_SKU.test(s.skuPartNumber || '') || ((s.prepaidUnits || {}).enabled || 0) >= 10000; }
   var EXO_SCRIPT = [
     '# OpsVantage: read-only Exchange Online checks Graph cannot see.',
     '# Install-Module ExchangeOnlineManagement -Scope CurrentUser ; Connect-ExchangeOnline',
@@ -159,7 +175,13 @@
     }
 
     if ((T.skus || []).length) {
-      html += '<section class="panel"><div class="panel-h"><h2>Licences</h2></div>' + table({ cols: ['Licence', 'Assigned', 'Purchased', 'Unused'], rows: T.skus.filter(function (s) { return (s.prepaidUnits || {}).enabled; }).map(function (s) { var tot = s.prepaidUnits.enabled; return [SKU[s.skuPartNumber] || s.skuPartNumber, String(s.consumedUnits), String(tot), String(Math.max(0, tot - s.consumedUnits))]; }) }) + '</section>';
+      var skus = T.skus.filter(function (s) { return (s.prepaidUnits || {}).enabled; })
+        .sort(function (a, b) { return (freeSku(a) ? 1 : 0) - (freeSku(b) ? 1 : 0) || (b.consumedUnits || 0) - (a.consumedUnits || 0); });
+      html += '<section class="panel"><div class="panel-h"><h2>Licences</h2></div>' + table({ cols: ['Licence', 'Assigned', 'Purchased', 'Unused'], rows: skus.map(function (s) {
+        var tot = s.prepaidUnits.enabled, free = freeSku(s), name = SKU[s.skuPartNumber] || s.skuPartNumber;
+        if (free && !/free|trial/i.test(name)) name += ' (free or trial)';
+        return [name, String(s.consumedUnits), free ? '-' : String(tot), free ? '-' : String(Math.max(0, tot - s.consumedUnits))];
+      }) }) + (skus.some(freeSku) ? '<p class="sub" style="font-size:.84rem;margin-top:8px">Free and trial licences are listed last; their seat counts are not purchases, so no unused figure is shown.</p>' : '') + '</section>';
     }
 
     html += '<section class="panel no-print"><div class="panel-h"><h2>Exchange Online checks</h2><button class="copy" type="button" data-value="' + esc(EXO_SCRIPT) + '">Copy script</button></div>' +

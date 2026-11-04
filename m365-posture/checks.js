@@ -42,6 +42,12 @@
     var userById = {};
     (T.users || []).forEach(function (u) { userById[u.id] = u; });
     var members = (T.users || []).filter(function (u) { return u.accountEnabled && u.userType !== 'Guest'; });
+    // Enabled members without a licence are mostly shared mailboxes, room and equipment accounts and service accounts.
+    // Counting them as people distorts MFA and stale-account numbers, so person checks use licensed members only.
+    var licensed = function (u) { return (u.assignedLicenses || []).length > 0; };
+    var people = members.filter(licensed);
+    var unlicensed = members.filter(function (u) { return !licensed(u); });
+    if (!people.length) people = members;
     var mfaById = {};
     (T.mfa || []).forEach(function (m) { mfaById[m.id] = m; });
 
@@ -87,13 +93,13 @@
 
     if (err('mfa') || !T.mfa) na('mfa-users', 'identity', 'high', 'Users have MFA registered', 'MFA registration could not be read.');
     else {
-      var known = members.filter(function (u) { var m = mfaById[u.id]; return m && !m.unknown; });
+      var known = people.filter(function (u) { var m = mfaById[u.id]; return m && !m.unknown; });
       var missing = known.filter(function (u) { return !mfaById[u.id].mfa; });
       var p = pct(known.length - missing.length, known.length);
       add({
         id: 'mfa-users', cat: 'identity', sev: 'high', title: 'Users have MFA registered',
         status: p >= 95 ? 'pass' : p >= 80 ? 'warn' : 'fail',
-        summary: p + '% of ' + known.length + ' enabled members have an MFA method (' + missing.length + ' without).' + (T.mfaTruncated ? ' Large tenant: the first 1,500 users were checked.' : ''),
+        summary: p + '% of ' + known.length + ' licensed users have an MFA method (' + missing.length + ' without).' + (unlicensed.length && people !== members ? ' ' + unlicensed.length + ' unlicensed accounts (shared mailboxes, rooms, service accounts) are checked separately under Accounts & licensing.' : '') + (T.mfaTruncated ? ' Large tenant: the first 1,500 users were checked.' : ''),
         evidence: missing.length ? { cols: ['User', 'Methods'], rows: missing.slice(0, 500).map(function (u) { return [u.userPrincipalName, (mfaById[u.id].methods || []).join(', ') || 'none']; }), csv: 'users-without-mfa' } : null,
         fix: { where: 'Entra admin center > Protection > Authentication methods > Registration campaign', steps: ['Enable the registration campaign for Microsoft Authenticator', 'Follow up with the listed users'] }
       });
@@ -259,12 +265,21 @@
 
     // ---------------------------------------------------------- Accounts & licensing
     if (T.signInActivity) {
-      var stale = members.filter(function (u) { var d = daysAgo((u.signInActivity || {}).lastSignInDateTime); return d == null ? daysAgo(u.createdDateTime) > 30 : d > 90; });
-      add({ id: 'stale-users', cat: 'hygiene', sev: 'med', title: 'No stale enabled accounts', status: stale.length > Math.max(2, members.length * 0.05) ? 'warn' : 'pass',
-        summary: stale.length ? stale.length + ' enabled member account(s) have not signed in for 90+ days (or never). Leavers\' accounts are easy targets.' : 'All enabled members signed in within 90 days.',
+      var stale = people.filter(function (u) { var d = daysAgo((u.signInActivity || {}).lastSignInDateTime); return d == null ? daysAgo(u.createdDateTime) > 30 : d > 90; });
+      add({ id: 'stale-users', cat: 'hygiene', sev: 'med', title: 'No stale enabled accounts', status: stale.length > Math.max(2, people.length * 0.05) ? 'warn' : 'pass',
+        summary: stale.length ? stale.length + ' licensed user account(s) have not signed in for 90+ days (or never). Leavers\' accounts are easy targets.' : 'All licensed users signed in within 90 days.',
         evidence: stale.length ? { cols: ['User', 'Last sign-in', 'Licensed'], rows: stale.slice(0, 500).map(function (u) { return [u.userPrincipalName, ((u.signInActivity || {}).lastSignInDateTime || 'never').slice(0, 10), (u.assignedLicenses || []).length ? 'yes' : 'no']; }), csv: 'stale-accounts' } : null,
         fix: { where: 'Microsoft 365 admin center > Users > Active users', steps: ['Block sign-in for leavers, convert their mailboxes to shared if needed, then remove licences'] } });
     } else na('stale-users', 'hygiene', 'med', 'No stale enabled accounts', 'Last sign-in dates need Entra ID P1.');
+    if (people !== members) {
+      var lastIn = function (u) { return ((u.signInActivity || {}).lastSignInDateTime || '').slice(0, 10); };
+      var unlicSorted = unlicensed.slice().sort(function (a, b) { return lastIn(b).localeCompare(lastIn(a)); });
+      var recent = T.signInActivity ? unlicensed.filter(function (u) { var d = daysAgo((u.signInActivity || {}).lastSignInDateTime); return d != null && d <= 90; }) : [];
+      add({ id: 'unlicensed-signin', cat: 'hygiene', sev: 'med', title: 'Shared mailboxes and resource accounts cannot sign in', status: unlicensed.length ? 'warn' : 'pass',
+        summary: unlicensed.length ? unlicensed.length + ' enabled account(s) have no licence. These are usually shared mailboxes, rooms and service accounts, and each one has a password that works until sign-in is blocked.' + (T.signInActivity ? ' ' + recent.length + ' of them signed in during the last 90 days.' : '') : 'Every enabled member account has a licence.',
+        evidence: unlicensed.length ? { cols: ['Account', 'Last sign-in', 'MFA registered', 'Synced from AD'], rows: unlicSorted.slice(0, 500).map(function (u) { var m = mfaById[u.id]; return [u.userPrincipalName, T.signInActivity ? (lastIn(u) || 'never') : 'unknown', m ? (m.unknown ? 'unknown' : m.mfa ? 'yes' : 'no') : 'not checked', u.onPremisesSyncEnabled ? 'yes' : 'no']; }), csv: 'unlicensed-enabled-accounts' } : null,
+        fix: { where: 'Microsoft 365 admin center > Users > Active users > [account] > Block sign-in (for synced accounts, disable them in on-premises AD)', steps: ['Block sign-in for shared mailboxes, rooms and equipment; people with delegated access keep using the mailbox', 'Keep sign-in only for service accounts that need it', 'For accounts that signed in recently, find out who uses them before blocking'] } });
+    }
     var disabledLicensed = (T.users || []).filter(function (u) { return !u.accountEnabled && (u.assignedLicenses || []).length; });
     add({ id: 'disabled-licensed', cat: 'hygiene', sev: 'low', title: 'Disabled accounts do not hold licences', status: disabledLicensed.length ? 'warn' : 'pass',
       summary: disabledLicensed.length ? disabledLicensed.length + ' disabled account(s) still hold licences you are paying for.' : 'No disabled accounts hold licences.',

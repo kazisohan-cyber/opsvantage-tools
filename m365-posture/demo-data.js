@@ -15,7 +15,7 @@
     var stale = p === 'old.locum' || p === 'intern2024' || p === 'clinic.west';
     return {
       id: 'u' + i, displayName: p.replace('.', ' '), userPrincipalName: p + '@contosodental.com', userType: 'Member', accountEnabled: true,
-      createdDateTime: iso(400 + i), assignedLicenses: p === 'scanner' ? [] : [SPB], onPremisesSyncEnabled: i % 3 === 0,
+      createdDateTime: iso(400 + i), assignedLicenses: p === 'scanner' || p === 'billing' || p === 'clinic.west' ? [] : [SPB], onPremisesSyncEnabled: i % 3 === 0,
       signInActivity: { lastSignInDateTime: p === 'intern2024' ? null : iso(stale ? 140 + i : i % 9) }
     };
   });
@@ -70,7 +70,8 @@
     if (base === 'organization') return { value: [{ id: 'demo-tenant', displayName: 'Contoso Dental Group', verifiedDomains: [{ name: 'contosodental.com', isDefault: true }], onPremisesSyncEnabled: true, onPremisesLastSyncDateTime: iso(5), createdDateTime: iso(1500) }] };
     if (base === 'subscribedSkus') return { value: [
       { skuId: SPB.skuId, skuPartNumber: 'SPB', capabilityStatus: 'Enabled', consumedUnits: 39, prepaidUnits: { enabled: 45 }, servicePlans: [{ servicePlanName: 'AAD_PREMIUM', provisioningStatus: 'Success' }, { servicePlanName: 'EXCHANGE_S_STANDARD', provisioningStatus: 'Success' }] },
-      { skuId: 'x2', skuPartNumber: 'EXCHANGESTANDARD', capabilityStatus: 'Enabled', consumedUnits: 2, prepaidUnits: { enabled: 5 }, servicePlans: [] }] };
+      { skuId: 'x2', skuPartNumber: 'EXCHANGESTANDARD', capabilityStatus: 'Enabled', consumedUnits: 2, prepaidUnits: { enabled: 5 }, servicePlans: [] },
+      { skuId: 'x3', skuPartNumber: 'FLOW_FREE', capabilityStatus: 'Enabled', consumedUnits: 6, prepaidUnits: { enabled: 10000 }, servicePlans: [] }] };
     if (base === 'domains') return { value: [
       { id: 'contosodental.com', isVerified: true, isDefault: true, authenticationType: 'Managed', passwordValidityPeriodInDays: 90, supportedServices: ['Email', 'OfficeCommunicationsOnline'] },
       { id: 'contoso-dental.co', isVerified: true, isDefault: false, authenticationType: 'Managed', passwordValidityPeriodInDays: 90, supportedServices: ['Email'] },

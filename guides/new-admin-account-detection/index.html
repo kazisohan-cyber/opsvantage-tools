@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Event ID 4720 and 4732: detect new accounts and local admins | OpsVantage Tools</title>
+<meta name="description" content="How to read Event ID 4720 and 4732, tell a routine new hire from an attacker's backdoor admin account, find who made the change and what to do next.">
+<link rel="canonical" href="https://tools.opsvantage.net/guides/new-admin-account-detection/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../../assets/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Event ID 4720 and 4732: detect new accounts and local admins">
+<meta property="og:description" content="How to read Event ID 4720 and 4732, tell a routine new hire from an attacker's backdoor admin account, find who made the change and what to do next.">
+<meta property="og:url" content="https://tools.opsvantage.net/guides/new-admin-account-detection/">
+<script src="../../assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/hub.css">
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Event ID 4720 and 4732: detect new accounts and local admins",
+    "description": "How to read Event ID 4720 and 4732, tell a routine new hire from an attacker's backdoor admin account, find who made the change and what to do next.",
+    "url": "https://tools.opsvantage.net/guides/new-admin-account-detection/",
+    "datePublished": "2026-11-05",
+    "dateModified": "2026-11-05",
+    "inLanguage": "en",
+    "author": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Why don't I see 4720 on my domain controller when I know an account was created?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Each DC only logs the changes it processed itself, so the event is on whichever DC handled the request. Check all of them, or forward them to one place. If none of them have it, the User Account Management audit subcategory is probably not enabled."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does adding someone to Domain Admins log 4732?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. Domain Admins is a global group, so the change logs 4728. Watch 4728, 4732 and 4756 together and filter on the group name or SID (Domain Admins ends in -512, Builtin Administrators is S-1-5-32-544)."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is 4732 for Remote Desktop Users worth alerting on?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "It isn't admin rights, but it is new remote access, and attackers add accounts there to keep RDP access to a server. Treat it as medium priority, and as high if it's on a server exposed to the internet."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Do Entra ID or Microsoft 365 accounts create Event ID 4720?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. Cloud-only accounts are created in Entra ID and logged in the Entra audit log as \"Add user\". Only accounts created in on-premises Active Directory or in a machine's local account database produce 4720."
+        }
+      }
+    ]
+  }
+]
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../../"><img src="../../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../../#tools">Tools</a>
+      <a class="link opt" href="../../guides/">Guides</a>
+      <a class="link opt" href="../../events/">Event IDs</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <article class="article">
+    <div class="tool-head">
+      <div class="crumbs"><a href="../../">Tools</a> / <a href="../">Guides</a> / Event ID 4720 and 4732</div>
+      <h1>Event ID 4720 and 4732: <em>new accounts and new admins</em></h1>
+      <p class="lead">How to read Event ID 4720 and 4732, tell a routine new hire from an attacker's backdoor admin account, find who made the change and what to do next.</p>
+      <div class="meta-line">Updated 2026-11-05 · 7 min read</div>
+    </div>
+<p>An alert says <strong>Event ID 4720</strong> fired on a file server at 02:14, and two seconds later an <strong>Event ID 4732</strong> added the same account to the local Administrators group. Nobody on the team was working at 02:14. That pairing, a new account followed almost immediately by admin rights, is one of the most common ways attackers keep access after the first foothold, because it survives a password reset on the account they originally stole.</p>
+<p>Most 4720 and 4732 events are boring: new hires, helpdesk work, software installers. The job is to separate those from the one that isn't, and to do it quickly. Here is how I read them.</p>
+
+<h2>What does Event ID 4720 mean?</h2>
+<p><a href="../../events/4720/">4720</a> is "A user account was created." It is written to the Security log of the machine that created the account. For a domain account that is the domain controller that handled the request, so you need logs from every DC, not just the one you happen to be logged into. For a local account it is the workstation or server itself.</p>
+<p>Two sections matter. <strong>Subject</strong> is who did it, including a <em>Logon ID</em>. <strong>New Account</strong> is the account that was created. The Attributes block below that (SAM Account Name, UPN, User Account Control) is useful for spotting odd names but rarely decides the case.</p>
+<p>Computer accounts do not show up here. A machine joined to the domain logs 4741, so a flood of 4720s is always about user accounts.</p>
+
+<h2>What does Event ID 4732 mean?</h2>
+<p><a href="../../events/4732/">4732</a> is "A member was added to a security-enabled local group." On a member server or workstation, that covers the local Administrators and Remote Desktop Users groups. On a domain controller, the built-in groups such as Administrators, Account Operators and Backup Operators are domain local groups, so additions to them also log 4732.</p>
+<p>Domain Admins is a global group, though, and that change is <a href="../../events/4728/"><strong>4728</strong></a>. Enterprise Admins and Schema Admins are universal groups and log <strong>4756</strong>. If your alert only watches 4732, it misses the most valuable group in the domain.</p>
+<div class="table-wrap"><table>
+  <tr><th>Event ID</th><th>Group scope</th><th>Privileged examples</th></tr>
+  <tr><td><code>4732</code></td><td>Local, or domain local on a DC</td><td>Administrators, Backup Operators, Account Operators, Server Operators, DnsAdmins</td></tr>
+  <tr><td><code>4728</code></td><td>Global</td><td>Domain Admins, Group Policy Creator Owners</td></tr>
+  <tr><td><code>4756</code></td><td>Universal</td><td>Enterprise Admins, Schema Admins</td></tr>
+</table></div>
+<div class="callout"><p><strong>The field that trips people up:</strong> when a <em>local</em> account is added to a local group, the Member <em>Account Name</em> in 4732 is often just <code>-</code>. The <em>Security ID</em> (<code>MemberSid</code> in the XML) is what identifies the account. Match it against the <code>TargetSid</code> of the 4720 that created it, or resolve it on the host.</p></div>
+
+<h2>How do I tell a legitimate account from a backdoor?</h2>
+<p>I check four things, in this order, because the first two settle most cases.</p>
+<ol>
+  <li><strong>Who is the Subject?</strong> Your provisioning service account or a named helpdesk admin creating <code>j.tan</code> during office hours is routine. A regular user account, a service account that has never created anything before, or <code>SYSTEM</code> (a script or tool running as a service) deserves attention.</li>
+  <li><strong>Is there a ticket or HR record?</strong> New hires come with a start date. Ask before you dig further; it often saves an hour.</li>
+  <li><strong>How fast did the group change follow?</strong> A person using Active Directory Users and Computers takes a minute or more between creating an account and adding groups. A script like the one below does it in a second or two, from one Logon ID.</li>
+  <li><strong>What does the name look like?</strong> Names that imitate built-in accounts (<code>support</code>, <code>admin1</code>, <code>svc_backup</code> when you have no such service) or end in <code>$</code>. An account named <code>helpdesk$</code> is a normal user account, but <code>net user</code> hides it from its list, which is exactly why attackers like it.</li>
+</ol>
+<p>A typical attacker sequence on a single host looks like this, and it produces a 4720 then a 4732 with the same Subject Logon ID:</p>
+<pre><code>net user helpdesk$ Winter2026! /add
+net localgroup administrators helpdesk$ /add</code></pre>
+
+<h2>Which 4720 and 4732 events are usually noise?</h2>
+<ul>
+  <li><strong>Provisioning and IAM tools</strong> that create accounts on a schedule under one service account.</li>
+  <li><strong>Windows setup</strong>, which creates a temporary <code>defaultuser0</code> account on new or reimaged machines.</li>
+  <li><strong>Device enrolment and join</strong>: joining a device to Entra ID adds administrator role SIDs to the local Administrators group, which can show up as 4732 during setup.</li>
+  <li><strong>Software installers</strong> for some backup, database and monitoring agents that create their own local accounts.</li>
+</ul>
+<p>Rather than suppressing these by event ID, allow-list the specific Subject accounts that do them. That way the same event from anyone else still alerts.</p>
+
+<h2>How do I find who created the account and from where?</h2>
+<p>The Subject's <em>Logon ID</em> links the change to a logon session. Search for a <strong>4624</strong> on the same machine whose <em>New Logon &gt; Logon ID</em> matches. That event gives you the logon type and the source IP, which tells you whether the creator was at the console, on RDP (type 10), or came over the network (type 3). The <a href="../windows-logon-types/">Windows logon types guide</a> covers how to read those.</p>
+<p>If the 4624 shows an internet IP, or the same account had a run of failures beforehand, follow the pattern in the <a href="../event-id-4625/">Event ID 4625 guide</a>: assume the creator's own credentials are compromised.</p>
+
+<h2>Hunting for new accounts and admin grants</h2>
+<p>First make sure the events are being logged at all. Both live under the Account Management category:</p>
+<pre><code>auditpol /get /category:"Account Management"</code></pre>
+<p>You want <em>User Account Management</em> and <em>Security Group Management</em> set to at least Success. Then pull the last week on a host with PowerShell:</p>
+<pre><code>Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4720,4728,4732,4756; StartTime=(Get-Date).AddDays(-7)} |
+  ForEach-Object {
+    $x = [xml]$_.ToXml()
+    $d = @{}; $x.Event.EventData.Data | ForEach-Object { $d[$_.Name] = $_.'#text' }
+    [pscustomobject]@{
+      Time      = $_.TimeCreated
+      Id        = $_.Id
+      By        = $d.SubjectUserName
+      LogonId   = $d.SubjectLogonId
+      Target    = $d.TargetUserName   # new account (4720) or group (47xx)
+      MemberSid = $d.MemberSid
+    }
+  } | Sort-Object Time | Format-Table -AutoSize</code></pre>
+<p>In Microsoft Sentinel, this query finds accounts that were created and then added to a group within ten minutes:</p>
+<pre><code>let created = SecurityEvent
+| where TimeGenerated &gt; ago(7d) and EventID == 4720
+| project CreatedTime = TimeGenerated, CreatedOn = Computer, MemberSid = TargetSid, NewAccount = TargetAccount, CreatedBy = SubjectAccount;
+SecurityEvent
+| where TimeGenerated &gt; ago(7d) and EventID in (4728, 4732, 4756)
+| project AddedTime = TimeGenerated, AddedOn = Computer, MemberSid, Group = TargetAccount
+| join kind=inner created on MemberSid
+| where AddedTime between (CreatedTime .. CreatedTime + 10m)
+| project CreatedTime, AddedTime, CreatedOn, AddedOn, NewAccount, Group, CreatedBy</code></pre>
+<p>It joins on the account's SID rather than the computer name, so it still matches when one domain controller created the account and another handled the group change.</p>
+<p>On a single host, <code>Get-LocalGroupMember -Group Administrators</code> shows the current members. Compare it against what that server should have; an account the logs no longer cover can still be sitting there.</p>
+
+<h2>What to do if the account isn't legitimate</h2>
+<ol>
+  <li><strong>Disable it, don't delete it.</strong> Deleting removes the SID and attributes you will want for the timeline. Remove it from the privileged group at the same time.</li>
+  <li><strong>Treat the creator as compromised.</strong> Reset the Subject account's password, revoke its sessions, and check where else that account logged on.</li>
+  <li><strong>Check whether the new account was used.</strong> Search 4624 for the new account name across all hosts.</li>
+  <li><strong>Look for the rest of the persistence.</strong> On the same host and time window: password resets (4724), account changes (4738), new services (7045) and scheduled tasks (4698).</li>
+</ol>
+
+<h2>FAQ</h2>
+<h3>Why don't I see 4720 on my domain controller when I know an account was created?</h3>
+<p>Each DC only logs the changes it processed itself, so the event is on whichever DC handled the request. Check all of them, or forward them to one place. If none of them have it, the User Account Management audit subcategory is probably not enabled.</p>
+<h3>Does adding someone to Domain Admins log 4732?</h3>
+<p>No. Domain Admins is a global group, so the change logs 4728. Watch 4728, 4732 and 4756 together and filter on the group name or SID (Domain Admins ends in <code>-512</code>, Builtin Administrators is <code>S-1-5-32-544</code>).</p>
+<h3>Is 4732 for Remote Desktop Users worth alerting on?</h3>
+<p>It isn't admin rights, but it is new remote access, and attackers add accounts there to keep RDP access to a server. Treat it as medium priority, and as high if it's on a server exposed to the internet.</p>
+<h3>Do Entra ID or Microsoft 365 accounts create Event ID 4720?</h3>
+<p>No. Cloud-only accounts are created in Entra ID and logged in the Entra audit log as "Add user". Only accounts created in on-premises Active Directory or in a machine's local account database produce 4720.</p>
+    <div class="next">
+      <div><b>Spot new accounts and admin grants in a whole export</b><p>Windows Event Triage reads exported Security events in your browser, lists every account created and flags members added to privileged groups.</p></div>
+      <a class="btn btn-primary" href="../../event-triage/">Open Event Triage</a>
+    </div>
+    <div class="next">
+      <div><b>Where did the creator log on from?</b><p>IOC Triage, our free browser extension: right-click the source IP of the session that created the account for a verdict from 15 threat-intel sources, then copy a ticket note.</p></div>
+      <a class="btn btn-ghost" href="https://chromewebstore.google.com/detail/dncgneacahomieionjkaofmfnojlkfmc?utm_source=tools.opsvantage.net&amp;utm_medium=guide&amp;utm_campaign=new-admin-account-detection">Add IOC Triage to Chrome</a>
+    </div>
+  </article>
+</main>
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../../">All tools</a> · <a href="../../guides/">Guides</a> · <a href="../../privacy/">Privacy &amp; terms</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../../assets/hub.js"></script>
+</body>
+</html>
