@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Find and block legacy authentication in Microsoft 365 | OpsVantage Tools</title>
+<meta name="description" content="What legacy authentication is in Microsoft 365, how to find who still uses it in the Entra sign-in logs, how to block it with security defaults or Conditional Access, and what to do about printers using SMTP AUTH.">
+<link rel="canonical" href="https://tools.opsvantage.net/guides/block-legacy-authentication-m365/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../../assets/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Find and block legacy authentication in Microsoft 365">
+<meta property="og:description" content="What legacy authentication is in Microsoft 365, how to find who still uses it in the Entra sign-in logs, how to block it with security defaults or Conditional Access, and what to do about printers using SMTP AUTH.">
+<meta property="og:url" content="https://tools.opsvantage.net/guides/block-legacy-authentication-m365/">
+<script src="../../assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/hub.css">
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Find and block legacy authentication in Microsoft 365",
+    "description": "What legacy authentication is in Microsoft 365, how to find who still uses it in the Entra sign-in logs, how to block it with security defaults or Conditional Access, and what to do about printers using SMTP AUTH.",
+    "url": "https://tools.opsvantage.net/guides/block-legacy-authentication-m365/",
+    "datePublished": "2026-11-05",
+    "dateModified": "2026-11-05",
+    "inLanguage": "en",
+    "author": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Didn't Microsoft already disable basic authentication?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "For most Exchange Online protocols, yes. But sign-in attempts using these clients still reach Entra ID, SMTP AUTH and exceptions have lasted longer in many tenants, and other apps can still use legacy flows. A Conditional Access block or security defaults close all of it in one place, whatever Exchange does."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Will blocking legacy authentication break Outlook?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Not current Outlook versions. Outlook for Microsoft 365, Outlook 2016 and later, the new Outlook, and the Outlook mobile app all use modern authentication. Very old Outlook versions and some built-in phone mail apps can break, which is why report-only mode comes first."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is \"Other clients\" the same as legacy authentication?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Mostly. In Conditional Access, Other clients covers the older protocols that aren't Exchange ActiveSync, such as IMAP, POP3, SMTP and older Office clients. Tick both options to cover everything."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I block legacy authentication on Business Basic or Standard?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes, with security defaults. Conditional Access needs Entra ID P1, which is in Business Premium."
+        }
+      }
+    ]
+  }
+]
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../../"><img src="../../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../../#tools">Tools</a>
+      <a class="link opt" href="../../guides/">Guides</a>
+      <a class="link opt" href="../../events/">Event IDs</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main class="wrap"><!--email_off-->
+  <article class="article">
+    <div class="tool-head">
+      <div class="crumbs"><a href="../../">Tools</a> / <a href="../">Guides</a> / Block legacy authentication</div>
+      <h1>Find and block <em>legacy authentication</em> in Microsoft 365</h1>
+      <p class="lead">What legacy authentication is in Microsoft 365, how to find who still uses it in the Entra sign-in logs, how to block it with security defaults or Conditional Access, and what to do about printers using SMTP AUTH.</p>
+      <div class="meta-line">Updated 2026-11-05 · 8 min read</div>
+    </div>
+<p>Legacy authentication means older mail protocols and clients that send a username and password with every request and can't do MFA: IMAP, POP3, SMTP AUTH, Exchange ActiveSync with basic auth, and older Outlook versions. Because they can't show an MFA prompt, they let an attacker skip it. That's why most password spraying against Microsoft 365 uses them.</p>
+<p>Microsoft has turned off basic authentication for most Exchange Online protocols, and many admins take that to mean the job is done. It isn't quite. Legacy attempts still show up in your sign-in logs, exceptions and SMTP AUTH have lingered in many tenants, and the block in Entra ID is what stops these requests whatever Exchange does. Finding and blocking legacy authentication takes an afternoon, and it's one of the highest-value changes you can make to a tenant.</p>
+
+<h2>How do I find legacy authentication in the sign-in logs?</h2>
+<p>In the Entra admin center, open <strong>Sign-in logs</strong>, add the <strong>Client app</strong> filter and select every option under <em>Legacy authentication clients</em>. Look at the last 30 days, and check both successes and failures.</p>
+<ul>
+  <li><strong>Failures from IPs you don't know</strong>, spread over many users: that's password spraying. It's blocked or failing, but it tells you someone has your user list.</li>
+  <li><strong>Successes</strong>: these are the ones to act on. Each one is a real device or app still signing in without MFA.</li>
+</ul>
+<p>If you send sign-in logs to Log Analytics or Sentinel, this summarises who and what:</p>
+<pre><code>SigninLogs
+| where TimeGenerated &gt; ago(30d)
+| where ClientAppUsed in ("Exchange ActiveSync", "IMAP4", "POP3", "Authenticated SMTP",
+    "Exchange Web Services", "MAPI Over HTTP", "Offline Address Book", "Outlook Anywhere (RPC over HTTP)",
+    "AutoDiscover", "Exchange Online PowerShell", "Other clients")
+| summarize Attempts = count(), Successes = countif(ResultType == "0"), IPs = dcount(IPAddress)
+    by UserPrincipalName, ClientAppUsed
+| order by Successes desc, Attempts desc</code></pre>
+<p>No Log Analytics? Download the sign-in log as CSV from the portal and filter the <em>Client app</em> column in a spreadsheet, or load it into a sign-in review tool.</p>
+
+<h2>What usually still uses legacy authentication?</h2>
+<ul>
+  <li><strong>Printers and scanners</strong> that send scan-to-email with SMTP AUTH. By far the most common.</li>
+  <li><strong>Line-of-business apps and scripts</strong> sending notifications through <code>smtp.office365.com</code> with a stored password.</li>
+  <li><strong>Old mail clients</strong>: Outlook 2010, older Apple Mail or a phone's built-in mail app set up years ago.</li>
+  <li><strong>Monitoring and backup tools</strong> using IMAP to read a mailbox.</li>
+</ul>
+<p>Each of these needs a replacement before you block, or something stops working on a Monday morning. Most are quick to fix once you know they exist.</p>
+
+<h2>What about printers and apps using SMTP AUTH?</h2>
+<p>You have three ways to keep them sending mail without legacy authentication:</p>
+<div class="table-wrap"><table>
+  <tr><th>Option</th><th>Good for</th><th>Catch</th></tr>
+  <tr><td>Direct Send (to your MX host on port 25)</td><td>Devices that only mail people inside your organisation</td><td>Can't send to outside addresses; needs SPF to include the sending IP</td></tr>
+  <tr><td>SMTP relay with a connector</td><td>Devices and apps that must mail outside addresses</td><td>Needs a static public IP and a connector in Exchange Online</td></tr>
+  <tr><td>OAuth-capable app or device firmware</td><td>Modern apps and current printer firmware</td><td>Not every device supports it</td></tr>
+</table></div>
+<p>Then turn SMTP AUTH off for the whole organisation and allow it only for any mailbox that genuinely still needs it while you migrate:</p>
+<pre><code>Set-TransportConfig -SmtpClientAuthenticationDisabled $true
+Set-CASMailbox -Identity scanner@contoso.com -SmtpClientAuthenticationDisabled $false   # temporary exception</code></pre>
+
+<h2>How do I block legacy authentication?</h2>
+<p><strong>Without Entra ID P1</strong> (Business Basic or Standard), turn on <strong>security defaults</strong>. They block legacy authentication and require MFA registration in one switch. If your tenant already has Conditional Access policies, you have to use those instead; the two can't run together.</p>
+<p><strong>With Entra ID P1</strong> (Business Premium, E3, E5), create a Conditional Access policy. The built-in template "Block legacy authentication" is the quickest route:</p>
+<ol>
+  <li><strong>Users:</strong> All users. Exclude your break-glass accounts only.</li>
+  <li><strong>Target resources:</strong> All resources (cloud apps).</li>
+  <li><strong>Conditions &gt; Client apps:</strong> tick <em>Exchange ActiveSync clients</em> and <em>Other clients</em> only.</li>
+  <li><strong>Grant:</strong> Block access.</li>
+  <li><strong>Enable policy:</strong> Report-only first.</li>
+</ol>
+<p>Leave it in report-only for a week, then filter the sign-in logs on the policy's result. Anything that "would have been blocked" and isn't on your migration list is something you didn't know about. Once that list is empty, switch the policy to On.</p>
+<div class="callout"><p><strong>The most common mistake:</strong> excluding the service account that sends scan-to-email "just for now". Exclusions in a legacy-auth block are exactly where password spraying succeeds, because those accounts can't do MFA. Fix the device with one of the options above instead, and keep exclusions to break-glass accounts.</p></div>
+
+<h2>How do I confirm it worked?</h2>
+<p>After the policy is on, legacy sign-in attempts don't disappear from the logs. Spraying continues; it just fails. What changes is the result: the attempts now fail with error <code>53003</code> (blocked by Conditional Access) instead of reaching password validation. Run the query above again after a week. Successes should be zero, and any remaining failures should show the policy as the reason.</p>
+<p>The <a href="../event-id-4625/">failed logon guide</a> covers the on-premises side of password spraying, and the <a href="../m365-impossible-travel/">impossible travel guide</a> covers what to check when a sign-in does get through.</p>
+
+<h2>FAQ</h2>
+<h3>Didn't Microsoft already disable basic authentication?</h3>
+<p>For most Exchange Online protocols, yes. But sign-in attempts using these clients still reach Entra ID, SMTP AUTH and exceptions have lasted longer in many tenants, and other apps can still use legacy flows. A Conditional Access block or security defaults close all of it in one place, whatever Exchange does.</p>
+<h3>Will blocking legacy authentication break Outlook?</h3>
+<p>Not current Outlook versions. Outlook for Microsoft 365, Outlook 2016 and later, the new Outlook, and the Outlook mobile app all use modern authentication. Very old Outlook versions and some built-in phone mail apps can break, which is why report-only mode comes first.</p>
+<h3>Is "Other clients" the same as legacy authentication?</h3>
+<p>Mostly. In Conditional Access, <em>Other clients</em> covers the older protocols that aren't Exchange ActiveSync, such as IMAP, POP3, SMTP and older Office clients. Tick both options to cover everything.</p>
+<h3>Can I block legacy authentication on Business Basic or Standard?</h3>
+<p>Yes, with security defaults. Conditional Access needs Entra ID P1, which is in Business Premium.</p>
+    <div class="next">
+      <div><b>Is legacy auth blocked in your tenant?</b><p>M365 Posture Scanner checks security defaults and your Conditional Access policies for a legacy authentication block, along with MFA coverage and admin roles. Read-only.</p></div>
+      <a class="btn btn-primary" href="../../m365-posture/">Open Posture Scanner</a>
+    </div>
+    <div class="next">
+      <div><b>Who is behind those IMAP attempts?</b><p>IOC Triage, our free browser extension: right-click an IP from the legacy sign-ins for a verdict from 15 threat-intel sources, then copy a ticket note.</p></div>
+      <a class="btn btn-ghost" href="https://chromewebstore.google.com/detail/dncgneacahomieionjkaofmfnojlkfmc?utm_source=tools.opsvantage.net&amp;utm_medium=guide&amp;utm_campaign=block-legacy-authentication-m365">Add IOC Triage to Chrome</a>
+    </div>
+  </article>
+<!--/email_off--></main>
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../../">All tools</a> · <a href="../../guides/">Guides</a> · <a href="../../privacy/">Privacy &amp; terms</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../../assets/hub.js"></script>
+</body>
+</html>

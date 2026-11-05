@@ -53,4 +53,7 @@
   <url><loc>https://tools.opsvantage.net/events/rdp-1149/</loc><lastmod>2026-11-03</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://tools.opsvantage.net/guides/new-admin-account-detection/</loc><lastmod>2026-11-04</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://tools.opsvantage.net/guides/kerberoasting-event-4769/</loc><lastmod>2026-11-04</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://tools.opsvantage.net/guides/m365-inbox-rules-forwarding/</loc><lastmod>2026-11-04</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://tools.opsvantage.net/guides/block-legacy-authentication-m365/</loc><lastmod>2026-11-04</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://tools.opsvantage.net/guides/mfa-fatigue-push-bombing/</loc><lastmod>2026-11-04</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
 </urlset>

@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MFA fatigue (push bombing): detect and stop it in Entra ID | OpsVantage Tools</title>
+<meta name="description" content="How MFA fatigue attacks work against Microsoft 365, how to spot them in Entra ID sign-in logs (error 500121), what to do when a user approved one, and the settings that stop them.">
+<link rel="canonical" href="https://tools.opsvantage.net/guides/mfa-fatigue-push-bombing/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../../assets/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MFA fatigue (push bombing): detect and stop it in Entra ID">
+<meta property="og:description" content="How MFA fatigue attacks work against Microsoft 365, how to spot them in Entra ID sign-in logs (error 500121), what to do when a user approved one, and the settings that stop them.">
+<meta property="og:url" content="https://tools.opsvantage.net/guides/mfa-fatigue-push-bombing/">
+<script src="../../assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/hub.css">
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "MFA fatigue (push bombing): detect and stop it in Entra ID",
+    "description": "How MFA fatigue attacks work against Microsoft 365, how to spot them in Entra ID sign-in logs (error 500121), what to do when a user approved one, and the settings that stop them.",
+    "url": "https://tools.opsvantage.net/guides/mfa-fatigue-push-bombing/",
+    "datePublished": "2026-11-05",
+    "dateModified": "2026-11-05",
+    "inLanguage": "en",
+    "author": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Does an MFA prompt mean the attacker has the password?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "In Entra ID, yes. With password plus MFA, the prompt only appears after the password is accepted. The exception is passwordless sign-in, where the prompt comes first, so check whether the user is set up for that before concluding."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is error 500121 in Entra ID?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "\"Authentication failed during strong authentication request\": the MFA step didn't complete. It covers denied prompts, prompts left unanswered and wrong codes. The sign-in's Authentication details tab shows which."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How many denied prompts should trigger an alert?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Three or more for one user within an hour is a reasonable starting point. Any denial followed by a success from the same unfamiliar IP should alert on its own."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is MFA fatigue still possible with number matching?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes, with social engineering: the attacker contacts the user and asks for the number. And it remains fully possible against SMS and voice methods. Number matching makes accidental approval much harder; it doesn't make the account safe."
+        }
+      }
+    ]
+  }
+]
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../../"><img src="../../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../../#tools">Tools</a>
+      <a class="link opt" href="../../guides/">Guides</a>
+      <a class="link opt" href="../../events/">Event IDs</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main class="wrap"><!--email_off-->
+  <article class="article">
+    <div class="tool-head">
+      <div class="crumbs"><a href="../../">Tools</a> / <a href="../">Guides</a> / MFA fatigue attacks</div>
+      <h1>MFA fatigue (<em>push bombing</em>): detect and stop it in Entra ID</h1>
+      <p class="lead">How MFA fatigue attacks work against Microsoft 365, how to spot them in Entra ID sign-in logs (error 500121), what to do when a user approved one, and the settings that stop them.</p>
+      <div class="meta-line">Updated 2026-11-05 · 7 min read</div>
+    </div>
+<p>A user calls the service desk: their phone keeps asking them to approve a sign-in they didn't start. Eight prompts in ten minutes, one at two in the morning. That's an MFA fatigue attack, also called push bombing. The attacker already has the password and is hoping the user taps Approve to make the noise stop, or by mistake.</p>
+<p>The prompts themselves tell you something important: Entra ID only asks for MFA after the password has been accepted. So a user getting unexpected MFA prompts has a compromised password, even if every prompt was denied. Treat it that way.</p>
+
+<h2>Does number matching stop MFA fatigue?</h2>
+<p>It helps a lot. Microsoft Authenticator push notifications now require number matching: the user has to type the number shown on the sign-in screen, which the attacker can see but the user can't. A sleepy tap on Approve no longer works. Authenticator also shows the app and location of the sign-in, which makes a strange request easier to spot.</p>
+<p>It doesn't end the attack, though. Attackers now pair the prompts with a phone call or Teams message pretending to be IT: "we're fixing your account, read me the number you see". And users who registered SMS or voice calls as their method still get the old, easy-to-approve prompts. So detection still matters.</p>
+
+<h2>How do I detect MFA fatigue in Entra ID sign-in logs?</h2>
+<p>Denied MFA prompts show up in the sign-in logs with error code <strong>500121</strong> ("Authentication failed during strong authentication request"). The <em>Authentication details</em> tab on each sign-in says why, for example "MFA denied; user declined the authentication" or that the user didn't respond to the notification.</p>
+<p>One 500121 means very little: people dismiss prompts by accident all the time. What you're looking for is:</p>
+<ul>
+  <li><strong>Several 500121 failures for one user within an hour</strong>, especially outside working hours.</li>
+  <li><strong>From an IP or country the user has never signed in from</strong>, often a hosting provider or VPN service.</li>
+  <li><strong>Followed by a successful sign-in from that same IP.</strong> That's the one that matters most: the user gave in.</li>
+</ul>
+<p>In Sentinel or Log Analytics:</p>
+<pre><code>let denials = SigninLogs
+| where TimeGenerated &gt; ago(7d) and ResultType == "500121"
+| summarize Denials = count(), FirstDenial = min(TimeGenerated), LastDenial = max(TimeGenerated), IPs = make_set(IPAddress, 10)
+    by UserPrincipalName, bin(TimeGenerated, 1h)
+| where Denials &gt;= 3;
+denials
+| join kind=leftouter (
+    SigninLogs
+    | where TimeGenerated &gt; ago(7d) and ResultType == "0"
+    | project UserPrincipalName, SuccessTime = TimeGenerated, SuccessIP = IPAddress
+  ) on UserPrincipalName
+| extend ApprovedAfter = SuccessTime between (FirstDenial .. LastDenial + 1h) and set_has_element(IPs, SuccessIP)
+| summarize Denials = max(Denials), Approvals = countif(ApprovedAfter), IPs = take_any(IPs) by UserPrincipalName, FirstDenial
+| order by Approvals desc, Denials desc</code></pre>
+<p>Any row with <code>Approvals</code> above zero goes to the top of your queue.</p>
+<div class="callout"><p><strong>Turn on "Report suspicious activity".</strong> In Entra ID authentication methods settings, this lets users report a prompt they didn't expect straight from the Authenticator notification. The report shows up as a risk event, so you hear about the attack from the user's thumb instead of a phone call the next morning.</p></div>
+
+<h2>What should I do if a user approved the prompt?</h2>
+<ol>
+  <li><strong>Revoke sessions and reset the password</strong> at once. The attacker has a valid session; the reset alone doesn't end it.</li>
+  <li><strong>Check the user's MFA methods.</strong> Registering the attacker's own authenticator app is often the very next step, so they don't need the user again. Look for "User registered security info" in the Entra audit log and remove anything the user doesn't recognise.</li>
+  <li><strong>Check the mailbox</strong> for new inbox rules and forwarding. The <a href="../m365-inbox-rules-forwarding/">inbox rules guide</a> has the searches.</li>
+  <li><strong>Review what the session did</strong>: files opened in SharePoint and OneDrive, emails sent, app consents granted, all from the attacker's IP.</li>
+  <li><strong>Find out where the password came from.</strong> A recent phishing email, reuse of a password from a breach, or a spraying campaign. If it was spraying, others may be affected too; the <a href="../m365-impossible-travel/">impossible travel guide</a> covers the sign-in side.</li>
+</ol>
+<p>If the user denied every prompt, you still reset the password and revoke sessions, because the password is known. You just don't need the full incident review.</p>
+
+<h2>How do I stop MFA fatigue for good?</h2>
+<ul>
+  <li><strong>Move people off SMS and voice.</strong> They're the methods that still allow a simple approve, and SIM-swap is a separate problem. Set the Authenticator registration campaign to nudge users over.</li>
+  <li><strong>Use phishing-resistant MFA for admins</strong>: passkeys in Authenticator, FIDO2 keys or Windows Hello for Business, enforced with a Conditional Access authentication strength. No push, nothing to approve.</li>
+  <li><strong>Add a sign-in risk policy</strong> if you have Entra ID P2, so sign-ins from anonymous or unfamiliar locations need a stronger check or get blocked.</li>
+  <li><strong>Protect MFA registration</strong> with a Conditional Access policy on "Register security information" that requires a trusted location or compliant device, so a stolen password can't be used to register a new method.</li>
+  <li><strong>Tell users what to do</strong>: an unexpected prompt means their password is known. Deny it, report it, and call the service desk. IT will never ask them to read out a number.</li>
+</ul>
+
+<h2>FAQ</h2>
+<h3>Does an MFA prompt mean the attacker has the password?</h3>
+<p>In Entra ID, yes. With password plus MFA, the prompt only appears after the password is accepted. The exception is passwordless sign-in, where the prompt comes first, so check whether the user is set up for that before concluding.</p>
+<h3>What is error 500121 in Entra ID?</h3>
+<p>"Authentication failed during strong authentication request": the MFA step didn't complete. It covers denied prompts, prompts left unanswered and wrong codes. The sign-in's Authentication details tab shows which.</p>
+<h3>How many denied prompts should trigger an alert?</h3>
+<p>Three or more for one user within an hour is a reasonable starting point. Any denial followed by a success from the same unfamiliar IP should alert on its own.</p>
+<h3>Is MFA fatigue still possible with number matching?</h3>
+<p>Yes, with social engineering: the attacker contacts the user and asks for the number. And it remains fully possible against SMS and voice methods. Number matching makes accidental approval much harder; it doesn't make the account safe.</p>
+    <div class="next">
+      <div><b>Spot MFA fatigue in a sign-in export</b><p>M365 Sign-in Review flags repeated MFA denials, password spraying, legacy auth and impossible travel from an Entra ID sign-in export, in your browser.</p></div>
+      <a class="btn btn-primary" href="../../m365-signins/">Open Sign-in Review</a>
+    </div>
+    <div class="next">
+      <div><b>Where are the pushes coming from?</b><p>IOC Triage, our free browser extension: right-click the sign-in IP for a verdict from 15 threat-intel sources, then copy a ticket note.</p></div>
+      <a class="btn btn-ghost" href="https://chromewebstore.google.com/detail/dncgneacahomieionjkaofmfnojlkfmc?utm_source=tools.opsvantage.net&amp;utm_medium=guide&amp;utm_campaign=mfa-fatigue-push-bombing">Add IOC Triage to Chrome</a>
+    </div>
+  </article>
+<!--/email_off--></main>
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../../">All tools</a> · <a href="../../guides/">Guides</a> · <a href="../../privacy/">Privacy &amp; terms</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../../assets/hub.js"></script>
+</body>
+</html>
