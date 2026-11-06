@@ -252,6 +252,18 @@
         '<details><summary>Evidence (' + f.rows.length + ')</summary>' + f.rows.slice(0, 6).map(function (s) { return '<pre>' + OV.esc(line(s)) + '</pre>'; }).join('') +
         (f.rows.length > 6 ? '<p>…and ' + (f.rows.length - 6) + ' more.</p>' : '') + '</details></div>';
     }).join('') : '<div class="verdict good"><div><div class="v">No findings</div><div class="sub" style="margin:2px 0 0">None of the built-in rules matched this export.</div></div></div>';
+    // IPs that appear in findings first, then the rest with failures, each with one-click lookups.
+    var flagged = new Set();
+    findings.forEach(function (f) { if (f.sev !== 'info') f.rows.forEach(function (s) { if (s.ip) flagged.add(s.ip); }); });
+    var ipStats = {};
+    L.forEach(function (s) { if (!s.ip || window.VSIoc.isPrivateIp(s.ip)) return; var o = ipStats[s.ip] || (ipStats[s.ip] = { ip: s.ip, n: 0, bad: 0, users: new Set(), country: s.country }); o.n++; if (s.status !== 'success') o.bad++; o.users.add(s.user); });
+    var ipList = Object.keys(ipStats).map(function (k) { return ipStats[k]; }).filter(function (o) { return flagged.has(o.ip) || o.bad; })
+      .sort(function (a, b) { return (flagged.has(b.ip) - flagged.has(a.ip)) || (b.bad - a.bad); }).slice(0, 25);
+    if (ipList.length) html += '<h3 style="font-family:var(--display);font-size:.95rem;margin:14px 0 8px">IPs worth checking <button class="copy" type="button" data-value="' + OV.esc(ipList.map(function (o) { return o.ip; }).join('\n')) + '">Copy all</button></h3><ul class="ioc-list">' +
+      ipList.map(function (o) {
+        return '<li><span class="ioc-v"><span>' + OV.esc(o.ip) + ' <span class="sub">' + (o.country ? OV.esc(o.country) + ' · ' : '') + o.n + ' sign-in' + (o.n === 1 ? '' : 's') + (o.bad ? ', ' + o.bad + ' failed' : '') + ', ' + o.users.size + ' user' + (o.users.size === 1 ? '' : 's') + '</span></span>' +
+          OV.pivots('ip', o.ip) + '</span><button class="copy" type="button" data-value="' + OV.esc(o.ip) + '">Copy</button></li>';
+      }).join('') + '</ul>';
     $('out').innerHTML = html;
     $('note').disabled = false;
 
@@ -328,4 +340,5 @@
   $('input').addEventListener('dragover', function (e) { e.preventDefault(); });
   $('input').addEventListener('drop', function (e) { if (e.dataTransfer.files && e.dataTransfer.files[0]) { e.preventDefault(); loadFile(e.dataTransfer.files[0]); } });
   $('note').addEventListener('click', function () { if (last) OV.copy(ticketNote(), 'Ticket note copied'); });
+  $('out').addEventListener('click', function (e) { var b = e.target.closest('.copy'); if (b) OV.copy(b.dataset.value, 'Copied'); });
 })();

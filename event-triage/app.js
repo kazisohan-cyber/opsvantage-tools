@@ -69,7 +69,7 @@
   function parseCsvEvents(text) {
     var rows = OV.parseCsv(text);
     if (rows.length < 2) throw new Error('Not enough rows.');
-    var head = rows[0].map(function (h) { return h.trim().toLowerCase(); });
+    var head = rows[0].map(function (h) { return h.trim().toLowerCase().replace(/\s*\[[^\]]*\]$/, ''); }); // "TimeGenerated [UTC]" (Sentinel CSV)
     var col = function (names) { for (var i = 0; i < names.length; i++) { var k = head.indexOf(names[i]); if (k >= 0) return k; } return -1; };
     var cId = col(['event id', 'id', 'eventid', 'eventcode', 'event code']);
     if (cId < 0) throw new Error('No "Event ID" or "Id" column found.');
@@ -77,13 +77,88 @@
     var cProv = col(['source', 'providername', 'provider', 'provider name']);
     var cComp = col(['machinename', 'computer', 'computername']);
     var cMsg = col(['message', 'description']);
+    var orig = rows[0].map(function (h) { return h.trim(); });
     var out = [];
     rows.slice(1).forEach(function (r) {
       var id = parseInt(r[cId], 10);
       if (isNaN(id)) return;
       var msg = cMsg >= 0 ? r[cMsg] : r.slice(head.length).join(',');
-      out.push(mk(id, cProv >= 0 ? r[cProv] : '', cTime >= 0 ? r[cTime] : '', cComp >= 0 ? r[cComp] : '', msg || '', {}));
+      // SIEM CSV exports (Sentinel, Splunk) carry the event fields as columns: keep them as named data.
+      var data = {};
+      orig.forEach(function (h, i) { if (h && r[i] != null && r[i] !== '') setField(data, h, r[i]); });
+      out.push(mk(id, cProv >= 0 ? r[cProv] : '', cTime >= 0 ? r[cTime] : '', cComp >= 0 ? r[cComp] : '', msg || '', data));
     });
+    return out;
+  }
+
+  // Splunk's WinEventLog field names and ECS / winlogbeat names, mapped to the Windows XML names the rules read.
+  var ALIAS = {
+    source_network_address: 'IpAddress', src_ip: 'IpAddress', client_address: 'IpAddress', ipaddress: 'IpAddress',
+    logon_type: 'LogonType', process_command_line: 'CommandLine', commandline: 'CommandLine', command_line: 'CommandLine',
+    service_name: 'ServiceName', service_file_name: 'ImagePath', ticket_encryption_type: 'TicketEncryptionType',
+    task_name: 'TaskName', targetusername: 'TargetUserName', target_user_name: 'TargetUserName', subjectusername: 'SubjectUserName',
+    subject_user_name: 'SubjectUserName', membername: 'MemberName', member_name: 'MemberName', scriptblocktext: 'ScriptBlockText',
+    script_block_text: 'ScriptBlockText', account_name: 'TargetUserName'
+  };
+  function setField(data, key, value) {
+    if (value == null || typeof value === 'object') return;
+    var k = String(key).split('.').pop();
+    var v = String(value);
+    if (!(k in data)) data[k] = v;
+    var a = ALIAS[k.toLowerCase()];
+    if (a && !data[a]) data[a] = v;
+  }
+  function flatten(o, data, depth) {
+    if (!o || typeof o !== 'object' || depth > 6) return;
+    Object.keys(o).forEach(function (k) {
+      var v = o[k];
+      if (v && typeof v === 'object' && !Array.isArray(v)) flatten(v, data, depth + 1);
+      else if (Array.isArray(v)) { if (v.length && typeof v[0] !== 'object') setField(data, k, v.join(', ')); }
+      else setField(data, k, v);
+    });
+  }
+  var pick = function (data, names) { for (var i = 0; i < names.length; i++) if (data[names[i]] != null && data[names[i]] !== '') return data[names[i]]; return ''; };
+
+  /** One SIEM record (Sentinel, Splunk, Elastic / winlogbeat, Defender advanced hunting) as an event. */
+  function fromRecord(rec) {
+    if (!rec || typeof rec !== 'object') return null;
+    var o = rec.result || rec._source || rec.fields || rec;
+    var data = {};
+    flatten(o, data, 0);
+    // Sentinel SecurityEvent keeps the raw <EventData> as a string column.
+    var xml = pick(data, ['EventData']);
+    if (/<Data\s/i.test(xml)) xml.replace(/<Data Name="([^"]+)">([^<]*)<\/Data>/g, function (m, n, v) { if (!data[n]) data[n] = v; return m; });
+    var winlog = o.winlog || {};
+    // ECS: user.name / source.ip are only meaningful with their parent, so read them before the flat names.
+    if (o.user && o.user.name && !data.TargetUserName) data.TargetUserName = String(o.user.name);
+    if (o.source && o.source.ip && !data.IpAddress) data.IpAddress = String(o.source.ip);
+    if (o.process && o.process.command_line && !data.CommandLine) data.CommandLine = String(o.process.command_line);
+    var id = parseInt(winlog.event_id || (o.event && o.event.code) || pick(data, ['EventID', 'EventId', 'EventCode', 'event_id', 'Id']), 10);
+    if (isNaN(id)) return null;
+    var time = o['@timestamp'] || pick(data, ['TimeGenerated', 'TimeCreated', 'Timestamp', '_time', 'timestamp', 'SystemTime', 'created']);
+    var comp = (o.host && (o.host.name || o.host.hostname)) || winlog.computer_name || pick(data, ['Computer', 'ComputerName', 'DeviceName', 'host', 'computer_name']);
+    var prov = winlog.provider_name || pick(data, ['ProviderName', 'Provider', 'provider_name', 'SourceName', 'source', 'EventSourceName', 'Channel', 'channel']);
+    var msg = pick(data, ['Message', 'message', 'RenderedDescription', 'Activity']) || Object.keys(data).slice(0, 40).map(function (k) { return k + ': ' + data[k]; }).join('\n');
+    return mk(id, prov, time, comp, msg, data);
+  }
+
+  function parseJson(text) {
+    var recs;
+    try {
+      var j = JSON.parse(text);
+      recs = Array.isArray(j) ? j : (j.hits && j.hits.hits) || j.results || j.value || j.rows || j.data || j.Results || [j];
+      // Log Analytics API shape: { tables: [{ columns, rows }] }
+      if (j.tables && j.tables[0] && j.tables[0].columns) {
+        var cols = j.tables[0].columns.map(function (c) { return c.name; });
+        recs = j.tables[0].rows.map(function (r) { var o = {}; cols.forEach(function (c, i) { o[c] = r[i]; }); return o; });
+      }
+    } catch (err) {
+      // NDJSON: one JSON object per line (Splunk export, Elastic, Defender)
+      recs = text.split(/\r?\n/).filter(function (l) { return l.trim(); }).map(function (l) { try { return JSON.parse(l); } catch (e) { return null; } }).filter(Boolean);
+      if (!recs.length) throw new Error('The JSON could not be parsed.');
+    }
+    var out = recs.map(fromRecord).filter(Boolean);
+    if (!out.length) throw new Error('No Windows event IDs found in this JSON (looked for EventID, EventCode or winlog.event_id).');
     return out;
   }
 
@@ -96,6 +171,7 @@
     var t = text.trim();
     if (!t) return [];
     if (t.charAt(0) === '<') return parseXml(t);
+    if (t.charAt(0) === '[' || t.charAt(0) === '{') return parseJson(t);
     return parseCsvEvents(t);
   }
 
@@ -123,7 +199,7 @@
         (e.id === 4104 ? e.msg : '');
     },
     service: function (e) { return field(e, ['ServiceName'], 'Service Name'); },
-    group: function (e) { return e.data.TargetUserName && /^47(28|32|56)$/.test(String(e.id)) ? e.data.TargetUserName : grab(e.msg, 'Group Name'); },
+    group: function (e) { return clean(e.data.Group_Name) || (e.data.TargetUserName && /^47(28|32|56)$/.test(String(e.id)) ? e.data.TargetUserName : grab(e.msg, 'Group Name')); },
     member: function (e) { return field(e, ['MemberName', 'MemberSid']) || grab(e.msg, 'Account Name') || grab(e.msg, 'Security ID'); },
     enc: function (e) { return field(e, ['TicketEncryptionType'], 'Ticket Encryption Type'); },
     task: function (e) { return field(e, ['TaskName'], 'Task Name'); }
@@ -264,7 +340,7 @@
     var raw = $('input').value;
     var events;
     try { events = parse(raw); } catch (e) {
-      $('out').innerHTML = '<p class="empty">' + OV.esc(e.message) + ' Paste CSV (Event Viewer or Export-Csv) or XML (Event Viewer or wevtutil /f:xml).</p>';
+      $('out').innerHTML = '<p class="empty">' + OV.esc(e.message) + ' Paste CSV (Event Viewer, Export-Csv or a SIEM export), XML (Event Viewer or wevtutil /f:xml) or JSON (Sentinel, Splunk, Elastic).</p>';
       $('breakdown').hidden = true; $('note').disabled = true; return;
     }
     if (!events.length) {
@@ -291,7 +367,7 @@
         (f.evs.length > 5 ? '<p>…and ' + (f.evs.length - 5) + ' more.</p>' : '') + '</details></div>';
     }).join('') : '<div class="verdict good"><div><div class="v">No findings</div><div class="sub" style="margin:2px 0 0">None of the built-in rules matched. That is not proof of a clean system, only that these patterns are absent.</div></div></div>';
     if (ips.length) html += '<h3 style="font-family:var(--display);font-size:.95rem;margin:14px 0 8px">Public IPs seen <button class="copy" type="button" data-value="' + OV.esc(ips.join('\n')) + '">Copy all</button></h3><ul class="ioc-list">' +
-      ips.slice(0, 30).map(function (ip) { return '<li><span>' + OV.esc(ip) + '</span><button class="copy" type="button" data-value="' + OV.esc(ip) + '">Copy</button></li>'; }).join('') + '</ul>';
+      ips.slice(0, 30).map(function (ip) { return '<li><span class="ioc-v"><span>' + OV.esc(ip) + '</span>' + OV.pivots('ip', ip) + '</span><button class="copy" type="button" data-value="' + OV.esc(ip) + '">Copy</button></li>'; }).join('') + '</ul>';
     $('out').innerHTML = html;
     $('note').disabled = false;
 
@@ -336,7 +412,7 @@
 
   function loadFile(f) {
     if (!f) return;
-    if (/\.evtx$/i.test(f.name)) { OV.toast('.evtx is binary: export to CSV or XML first'); return; }
+    if (/\.evtx$/i.test(f.name)) { OV.toast('.evtx is binary: export to CSV, XML or JSON first'); return; }
     if (f.size > 50 * 1024 * 1024) { OV.toast('File is over 50 MB; export fewer events'); return; }
     var rd = new FileReader();
     rd.onload = function () { $('input').value = String(rd.result); analyze(); };

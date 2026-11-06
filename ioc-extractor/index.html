@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>IOC Extractor: Defang &amp; Refang Indicators | OpsVantage Tools</title>
-<meta name="description" content="Free IOC extractor: paste a threat report, alert or email and pull out every IP, domain, URL, hash, email and CVE. Defang or refang in one click, export CSV. Runs entirely in your browser.">
+<meta name="description" content="Free IOC extractor: paste a threat report, alert or email and pull out every IP, domain, URL, hash, email, CVE, file name and registry key. Defang or refang in one click, export CSV. Runs entirely in your browser.">
 <link rel="canonical" href="https://tools.opsvantage.net/ioc-extractor/">
 <meta name="theme-color" content="#0A0D18">
 <link rel="icon" type="image/png" href="../assets/logo.png">
@@ -52,8 +52,8 @@
   <div class="tool-head">
     <div class="crumbs"><a href="../">Tools</a> / IOC Extractor</div>
     <h1>IOC <em>Extractor</em></h1>
-    <p class="lead">Paste a threat report, alert, email or log. Every IP, domain, URL, hash, email address and CVE comes out grouped and de-duplicated, defanged or refanged, ready for your ticket or blocklist.</p>
-    <span class="privacy-note">● Runs in your browser. Nothing you paste is sent anywhere.</span>
+    <p class="lead">Paste a threat report, alert, email or log. Every IP, domain, URL, hash, email address, CVE, file name, registry key, ASN and Bitcoin address comes out grouped and de-duplicated, defanged or refanged, ready for your ticket or blocklist, with one-click lookups in VirusTotal, AbuseIPDB and more.</p>
+    <span class="privacy-note">● Runs in your browser. Nothing you paste is sent anywhere; lookup links open only when you click one.</span>
   </div>
 
   <div class="workspace">
@@ -95,8 +95,8 @@
   <section class="howto">
     <h2>What it handles</h2>
     <div class="cols">
-      <div><h3>Defanged input</h3><p>Understands hxxp, [.], (.), {.}, [dot], [@] and [:] so you can paste straight from threat intel reports.</p></div>
-      <div><h3>Fewer false positives</h3><p>Checks domains against the full IANA TLD list and skips log field names like <span class="mono">event.type</span>, file names and clock times.</p></div>
+      <div><h3>Defanged input</h3><p>Understands hxxp, [.], (.), {.}, [dot], (dot), [@], (at) and [:] so you can paste straight from threat intel reports.</p></div>
+      <div><h3>Fewer false positives</h3><p>Checks domains against the full IANA TLD list and skips log field names like <span class="mono">event.type</span>, version numbers and clock times. File names such as <span class="mono">invoice.pdf</span> get their own list instead of posing as domains.</p></div>
       <div><h3>Safe sharing</h3><p>"Copy text with IOCs defanged" returns your original text with every indicator neutralised, so links can't be clicked by accident in tickets or chat.</p></div>
     </div>
     <p class="related-guides sub" style="margin-top:22px">Guides: <a href="../guides/investigate-suspicious-ip/" style="color:var(--pink)">How to investigate a suspicious IP address</a> · <a href="../guides/read-email-headers/" style="color:var(--pink)">How to read email headers to spot phishing</a></p>

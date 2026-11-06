@@ -85,5 +85,40 @@
     return rows;
   }
 
-  window.OV = { toast: toast, copy: copy, download: download, esc: esc, csvCell: csvCell, parseCsv: parseCsv };
+  // One-click lookups. Nothing is sent until the analyst clicks; each link opens the source in a new tab.
+  var E = encodeURIComponent;
+  var PIVOTS = {
+    ip: [['VirusTotal', function (v) { return 'https://www.virustotal.com/gui/ip-address/' + E(v); }],
+      ['AbuseIPDB', function (v) { return 'https://www.abuseipdb.com/check/' + E(v); }],
+      ['GreyNoise', function (v) { return 'https://viz.greynoise.io/ip/' + E(v); }],
+      ['Shodan', function (v) { return 'https://www.shodan.io/host/' + E(v); }],
+      ['urlscan', function (v) { return 'https://urlscan.io/search/#ip:' + E('"' + v + '"'); }]],
+    domain: [['VirusTotal', function (v) { return 'https://www.virustotal.com/gui/domain/' + E(v); }],
+      ['urlscan', function (v) { return 'https://urlscan.io/domain/' + E(v); }],
+      ['WHOIS', function (v) { return 'https://who.is/whois/' + E(v); }],
+      ['crt.sh', function (v) { return 'https://crt.sh/?q=' + E(v); }]],
+    url: [['VirusTotal', function (v) { return 'https://www.virustotal.com/gui/search/' + E(E(v)); }],
+      ['urlscan', function (v) { return 'https://urlscan.io/search/#page.url:' + E('"' + v + '"'); }]],
+    hash: [['VirusTotal', function (v) { return 'https://www.virustotal.com/gui/file/' + E(v); }],
+      ['MalwareBazaar', function (v) { return 'https://bazaar.abuse.ch/browse.php?search=' + E((v.length === 32 ? 'md5:' : v.length === 40 ? 'sha1:' : 'sha256:') + v); }],
+      ['Hybrid Analysis', function (v) { return 'https://www.hybrid-analysis.com/search?query=' + E(v); }]],
+    cve: [['NVD', function (v) { return 'https://nvd.nist.gov/vuln/detail/' + E(v); }],
+      ['CISA KEV', function (v) { return 'https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=' + E(v); }],
+      ['CVE.org', function (v) { return 'https://www.cve.org/CVERecord?id=' + E(v); }]],
+    asn: [['BGP.he.net', function (v) { return 'https://bgp.he.net/' + E(v); }],
+      ['ipinfo', function (v) { return 'https://ipinfo.io/' + E(v); }]],
+    crypto: [['mempool.space', function (v) { return 'https://mempool.space/address/' + E(v); }]]
+  };
+  var GROUP_OF = { ipv4: 'ip', ipv6: 'ip', ip: 'ip', domain: 'domain', url: 'url', md5: 'hash', sha1: 'hash', sha256: 'hash', hash: 'hash', cve: 'cve', asn: 'asn', btc: 'crypto' };
+  /** Small "open in" links for an indicator (refanged value). Empty string when there is nothing useful to open. */
+  function pivots(type, value) {
+    var list = PIVOTS[GROUP_OF[type]];
+    if (!list || !value) return '';
+    if (GROUP_OF[type] === 'ip' && window.VSIoc && window.VSIoc.isPrivateIp(value)) return '';
+    return '<span class="pivots">' + list.map(function (p) {
+      return '<a href="' + esc(p[1](value)) + '" target="_blank" rel="noopener noreferrer" title="Open in ' + esc(p[0]) + ' (sends this value to ' + esc(p[0]) + ')">' + esc(p[0]) + '</a>';
+    }).join('') + '</span>';
+  }
+
+  window.OV = { toast: toast, copy: copy, download: download, esc: esc, csvCell: csvCell, parseCsv: parseCsv, pivots: pivots };
 })();

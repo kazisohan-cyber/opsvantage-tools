@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Windows Event Triage: Event ID Lookup &amp; Log Analyzer | OpsVantage Tools</title>
-<meta name="description" content="Free Windows event log triage. Look up what a Windows, Sysmon, PowerShell or Defender event ID means, or paste exported events (CSV or XML) to flag brute force, password spraying, new admins, malicious services, encoded PowerShell, Kerberoasting, DCSync and log clearing. Runs in your browser.">
+<meta name="description" content="Free Windows event log triage. Look up what a Windows, Sysmon, PowerShell or Defender event ID means, or paste exported events (CSV, XML or SIEM JSON from Sentinel, Splunk or Elastic) to flag brute force, password spraying, new admins, malicious services, encoded PowerShell, Kerberoasting, DCSync and log clearing. Runs in your browser.">
 <link rel="canonical" href="https://tools.opsvantage.net/event-triage/">
 <meta name="theme-color" content="#0A0D18">
 <link rel="icon" type="image/png" href="../assets/logo.png">
@@ -78,13 +78,13 @@
         <h2 id="in-h">Analyze exported events</h2>
         <div class="row-actions" style="margin:0">
           <label class="btn btn-ghost btn-sm" for="file" style="cursor:pointer">Open file</label>
-          <input type="file" id="file" accept=".csv,.xml,.txt" hidden>
+          <input type="file" id="file" accept=".csv,.xml,.json,.ndjson,.txt" hidden>
           <button class="btn btn-ghost btn-sm" type="button" id="sample">Load sample</button>
           <button class="btn btn-ghost btn-sm" type="button" id="clear">Clear</button>
         </div>
       </div>
       <label for="input" style="position:absolute;left:-9999px">Exported events</label>
-      <textarea class="input" id="input" spellcheck="false" placeholder="Paste CSV or XML exported events, or drop a file here.&#10;&#10;Event Viewer: right-click the log > Save All Events As > CSV or XML&#10;PowerShell: Get-WinEvent -LogName Security -MaxEvents 5000 | Export-Csv events.csv&#10;wevtutil: wevtutil qe Security /c:5000 /f:xml > events.xml&#10;&#10;.evtx files are binary: export them to CSV or XML first."></textarea>
+      <textarea class="input" id="input" spellcheck="false" placeholder="Paste CSV, XML or JSON exported events, or drop a file here.&#10;&#10;Event Viewer: right-click the log > Save All Events As > CSV or XML&#10;PowerShell: Get-WinEvent -LogName Security -MaxEvents 5000 | Export-Csv events.csv&#10;wevtutil: wevtutil qe Security /c:5000 /f:xml > events.xml&#10;Sentinel / Splunk / Elastic: export query results as CSV or JSON&#10;&#10;.evtx files are binary: export them to CSV, XML or JSON first."></textarea>
       <div class="row-actions">
         <button class="btn btn-primary btn-sm" type="button" id="analyze">Analyze events</button>
       </div>

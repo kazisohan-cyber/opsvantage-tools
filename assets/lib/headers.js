@@ -105,10 +105,12 @@
     if (returnPath && fromDom && !sameOrg(domOf(returnPath), fromDom)) add(auth.dmarc === 'pass' ? 0 : 8, `Envelope sender ${returnPath} differs from From domain`, auth.dmarc === 'pass' ? 'info' : 'bad');
     const dispAddr = (display.match(/[^\s<>"']+@[^\s<>"']+/) || [])[0];
     if (dispAddr && dispAddr.toLowerCase() !== fromAddr) add(25, `Display name shows another address (${dispAddr}) than the real sender (${fromAddr})`);
+    let brandSpoof = false;
     if (A && display && fromDom) {
       const low = display.toLowerCase();
       for (const b of A.BRANDS) {
         if (b.keywords.some((k) => k.length > 3 && low.includes(k)) && !A.hostInList(fromDom, b.domains)) {
+          brandSpoof = true;
           add(25, `Display name says "${display}" (${b.name}) but the sender domain is ${fromDom}`); break;
         }
       }
@@ -136,7 +138,13 @@
     const mailer = one('x-mailer') || one('user-agent');
     if (mailer && /(phpmailer|swiftmailer|python|curl|massmail|sendblaster|atomic)/i.test(mailer)) add(10, `Sent with a bulk / script mailer (${mailer})`);
 
-    const verdict = score >= 45 ? 'malicious' : score >= 18 ? 'suspicious' : score <= -15 ? 'benign' : 'unknown';
+    let verdict = score >= 45 ? 'malicious' : score >= 18 ? 'suspicious' : score <= -15 ? 'benign' : 'unknown';
+    // A brand in the display name sent from someone else's domain is impersonation even when that domain
+    // authenticates perfectly (attackers register their own domain and set up SPF, DKIM and DMARC).
+    if (brandSpoof && (verdict === 'unknown' || verdict === 'benign')) {
+      verdict = 'suspicious';
+      reasons.push({ t: 'Passing authentication only proves the sender owns ' + fromDom + ', not that it is the brand in the display name', kind: 'info' });
+    }
     const iocs = [];
     const push = (type, value, why) => { if (value && !iocs.some((x) => x.value === value)) iocs.push({ type, value, why }); };
     if (origin) push(origin.includes(':') ? 'ipv6' : 'ipv4', origin, 'Originating IP');

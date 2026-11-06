@@ -38,10 +38,32 @@
     return '<div class="stat"><b><span class="pill ' + cls + '">' + OV.esc(v) + '</span></b><span>' + label + (dom ? ' · ' + OV.esc(dom) : '') + '</span></div>';
   }
 
-  function analyze() {
+  // A full message (headers + body) also gets its links and attachments read. The HTML is parsed in an inert
+  // document only to collect links: nothing in the email is rendered, run or fetched.
+  var fileBytes = null, fileText = null, seq = 0;
+  function hasBody(raw) {
+    var i = raw.replace(/\r\n/g, '\n').search(/\n[ \t]*\n/);
+    return i > 0 && raw.slice(i).trim().length > 0;
+  }
+
+  async function analyze() {
     var raw = $('input').value;
+    var mine = ++seq;
     if (!raw.trim()) { $('out').innerHTML = '<p class="empty">Paste headers and press Analyze.</p>'; $('details').hidden = true; $('note').disabled = true; return; }
     var r = H.analyze(raw);
+    r.body = null;
+    if (r.ok && window.VSEml && hasBody(raw)) {
+      try {
+        var bytes = fileBytes && raw === fileText ? fileBytes : new TextEncoder().encode(raw);
+        var e = await window.VSEml.analyze(bytes);
+        if (mine !== seq) return;
+        if (e.ok) {
+          r.body = { urls: e.urls, attachments: e.attachments };
+          r.reasons = r.reasons.concat(e.reasons);
+          r.verdict = e.verdict;
+        }
+      } catch (err) { /* body unreadable: keep the header result */ }
+    }
     last = r;
     if (!r.ok) {
       $('out').innerHTML = '<p class="empty">' + OV.esc(r.error) + '</p>';
@@ -60,9 +82,11 @@
       html += '<h3 style="font-family:var(--display);font-size:.95rem;margin:16px 0 8px">Indicators to check</h3><ul class="ioc-list">' +
         r.iocs.map(function (x) {
           var d = I.defang(x.value, x.type);
-          return '<li><span>' + OV.esc(d) + ' <span class="sub">' + OV.esc(x.why) + '</span></span><button class="copy" type="button" data-value="' + OV.esc(x.value) + '">Copy</button></li>';
+          return '<li><span class="ioc-v"><span>' + OV.esc(d) + ' <span class="sub">' + OV.esc(x.why) + '</span></span>' +
+            OV.pivots(x.type === 'email' ? 'domain' : x.type, x.type === 'email' ? x.value.split('@')[1] : x.value) + '</span><button class="copy" type="button" data-value="' + OV.esc(x.value) + '">Copy</button></li>';
         }).join('') + '</ul>';
     }
+    if (r.body) html += bodyHtml(r.body);
     $('out').innerHTML = html;
 
     $('hop-count').textContent = r.hops.length;
@@ -79,6 +103,36 @@
     var rows = [['From', s.from], ['Reply-To', s.replyTo], ['Return-Path', s.returnPath], ['To', s.to], ['Subject', s.subject], ['Date', s.date], ['Message-ID', s.messageId], ['Mailer', s.mailer], ['Originating IP', r.origin]];
     $('summary').innerHTML = rows.filter(function (x) { return x[1]; }).map(function (x) { return '<dt>' + x[0] + '</dt><dd class="' + (x[0] === 'Message-ID' || x[0] === 'Originating IP' ? 'mono' : '') + '">' + OV.esc(x[1]) + '</dd>'; }).join('');
     $('details').hidden = false;
+  }
+
+  function fmtSize(n) { return n < 1024 ? n + ' B' : n < 1048576 ? Math.round(n / 1024) + ' KB' : (n / 1048576).toFixed(1) + ' MB'; }
+
+  function bodyHtml(b) {
+    var h = '';
+    var H3 = function (t, n) { return '<h3 style="font-family:var(--display);font-size:.95rem;margin:16px 0 8px">' + t + ' <span class="count">' + n + '</span></h3>'; };
+    if (b.attachments.length) {
+      h += H3('Attachments', b.attachments.length) + '<ul class="ioc-list">' + b.attachments.map(function (a) {
+        return '<li><span class="ioc-v"><span>' + OV.esc(a.name) + ' <span class="sub">' + OV.esc(a.type || '') + ' · ' + fmtSize(a.size) + '</span></span>' +
+          (a.flags.length ? '<span class="sub" style="color:#ef4444;white-space:normal">' + OV.esc(a.flags.join('; ')) + '</span>' : '') +
+          '<span class="sub" style="white-space:normal;word-break:break-all">SHA-256 ' + OV.esc(a.sha256) + '</span>' + OV.pivots('sha256', a.sha256) +
+          '</span><button class="copy" type="button" data-value="' + OV.esc(a.sha256) + '">Copy hash</button></li>';
+      }).join('') + '</ul>';
+    }
+    if (b.urls.length) {
+      var urls = b.urls.slice().sort(function (x, y) { return (y.mismatch + (y.level === 'block') * 2 + (y.level === 'warn')) - (x.mismatch + (x.level === 'block') * 2 + (x.level === 'warn')); });
+      h += H3('Links in the email', urls.length) + '<ul class="ioc-list">' + urls.slice(0, 40).map(function (u) {
+        var warn = [];
+        if (u.mismatch) warn.push('Text shows "' + u.text.slice(0, 80) + '" but goes to ' + u.host);
+        if (u.real !== u.url) warn.push('Unwrapped from a safe-link redirect');
+        if (u.reasons.length) warn.push(u.reasons.join('; '));
+        var bad = u.mismatch || u.level === 'block' || u.level === 'warn';
+        return '<li><span class="ioc-v"><span>' + OV.esc(I.defang(u.real, 'url')) + '</span>' +
+          (warn.length ? '<span class="sub" style="white-space:normal;' + (bad ? 'color:#ef4444' : '') + '">' + OV.esc(warn.join(' · ')) + '</span>' : '') +
+          OV.pivots('url', u.real) + '</span><button class="copy" type="button" data-value="' + OV.esc(u.real) + '">Copy</button></li>';
+      }).join('') + '</ul>' + (urls.length > 40 ? '<p class="sub">…and ' + (urls.length - 40) + ' more.</p>' : '');
+    }
+    if (!b.attachments.length && !b.urls.length) h += '<p class="sub" style="margin-top:12px">The message body has no links or attachments.</p>';
+    return h;
   }
 
   function fmtDelay(sec) {
@@ -102,6 +156,8 @@
       'Findings:'
     ].concat(r.reasons.map(function (x) { return '- ' + x.t; }));
     if (r.iocs.length) lines = lines.concat(['', 'Indicators (defanged):'], r.iocs.map(function (x) { return '- ' + I.defang(x.value, x.type) + ' (' + x.why + ')'; }));
+    if (r.body && r.body.attachments.length) lines = lines.concat(['', 'Attachments:'], r.body.attachments.map(function (a) { return '- ' + a.name + ' (' + fmtSize(a.size) + ') SHA-256 ' + a.sha256 + (a.flags.length ? ' [' + a.flags.join('; ') + ']' : ''); }));
+    if (r.body && r.body.urls.length) lines = lines.concat(['', 'Links (defanged):'], r.body.urls.slice(0, 20).map(function (u) { return '- ' + I.defang(u.real, 'url') + (u.mismatch ? ' [text shows ' + u.text.slice(0, 60) + ']' : ''); }));
     return lines.join('\n');
   }
 
@@ -109,8 +165,14 @@
     if (!f) return;
     if (f.size > 25 * 1024 * 1024) { OV.toast('File is over 25 MB'); return; }
     var rd = new FileReader();
-    rd.onload = function () { $('input').value = String(rd.result); analyze(); };
-    rd.readAsText(f);
+    rd.onload = function () {
+      fileBytes = new Uint8Array(rd.result);
+      fileText = new TextDecoder('utf-8').decode(fileBytes);
+      $('input').value = fileText;
+      fileText = $('input').value; // the textarea normalises line endings
+      analyze();
+    };
+    rd.readAsArrayBuffer(f);
   }
 
   $('analyze').addEventListener('click', analyze);

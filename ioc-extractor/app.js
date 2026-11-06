@@ -10,7 +10,11 @@
     { key: 'ip', label: 'IP addresses', types: ['ipv4', 'ipv6'] },
     { key: 'email', label: 'Email addresses', types: ['email'] },
     { key: 'hash', label: 'File hashes', types: ['sha256', 'sha1', 'md5'] },
-    { key: 'cve', label: 'CVEs', types: ['cve'] }
+    { key: 'cve', label: 'CVEs', types: ['cve'] },
+    { key: 'file', label: 'File names', types: ['filename'] },
+    { key: 'registry', label: 'Registry keys', types: ['registry'] },
+    { key: 'asn', label: 'ASNs', types: ['asn'] },
+    { key: 'crypto', label: 'Bitcoin addresses', types: ['btc'] }
   ];
 
   var SAMPLE = [
@@ -21,7 +25,9 @@
     'MD5: 44d88612fea8a8f36de82e1278abb02f',
     'C2 beacons seen to 45.137.21.9 and update-cdn-sync.xyz every 60s.',
     'Internal host 10.20.4.17 (FIN-LT-042) contacted the C2. Exploited CVE-2024-21412.',
-    'Log field event.type=network and file name invoice.pdf are not indicators.'
+    'Persistence: C:\\Users\\Public\\svchost.exe added under HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\Updater.',
+    'Ransom note asks for payment to bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq. C2 hosting is in AS9009.',
+    'Log field event.type=network is not an indicator.'
   ].join('\n');
 
   var state = { fmt: 'defang', items: [] };
@@ -74,8 +80,8 @@
         '</span></span><button class="copy" type="button" data-group="' + g.key + '">Copy ' + g.label.toLowerCase() + '</button></div>' +
         '<ul class="ioc-list">' + list.map(function (x) {
           var note = x.type !== 'url' && x.group === 'hash' ? I.LABEL_OF[x.type] : x.type === 'ipv6' ? 'IPv6' : x.from;
-          return '<li><span>' + OV.esc(shown(x)) + (note ? ' <span class="sub">' + OV.esc(note) + '</span>' : '') +
-            '</span><button class="copy" type="button" data-value="' + OV.esc(shown(x)) + '">Copy</button></li>';
+          return '<li><span class="ioc-v"><span>' + OV.esc(shown(x)) + (note ? ' <span class="sub">' + OV.esc(note) + '</span>' : '') +
+            '</span>' + OV.pivots(x.type, x.value) + '</span><button class="copy" type="button" data-value="' + OV.esc(shown(x)) + '">Copy</button></li>';
         }).join('') + '</ul></div>';
     }).join('');
   }

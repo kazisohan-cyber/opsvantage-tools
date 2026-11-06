@@ -13,18 +13,26 @@
   const TLD = '(?:[a-z]{2,24}|xn--[a-z0-9-]{2,59})';
   const OCTET = '(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)';
 
+  // File extensions worth reporting as file names (malware, scripts, documents, archives).
+  const FILE_EXT = 'exe|dll|scr|cpl|sys|drv|ocx|msi|msp|msc|ps1|psm1|psd1|bat|cmd|vbs|vbe|js|jse|wsf|wsh|hta|lnk|reg|inf|jar|py|sh|' +
+    'iso|img|vhd|vhdx|zip|rar|7z|gz|tar|tgz|cab|doc|docx|docm|dotm|xls|xlsx|xlsm|xlsb|xlam|ppt|pptx|pptm|rtf|pdf|one|odt|' +
+    'html|htm|svg|eml|msg|txt|log|csv|md|xml|json|bin|dat|tmp|apk|dmg|pkg|elf';
   const RE = {
     url: new RegExp('(?:https?|hxxps?|fxp|ftp)(?::\\/\\/|\\[:\\]\\/\\/|\\[:\\/\\/\\])[^\\s"\'<>`]+', 'gi'),
-    email: new RegExp('[a-z0-9._%+-]+(?:@|\\[@\\]|\\(@\\)|\\[at\\])(?:' + LABEL + DOT + ')+' + TLD + '(?![a-z0-9-])', 'gi'),
+    email: new RegExp('[a-z0-9._%+-]+(?:@|\\[@\\]|\\(@\\)|\\[at\\]|\\(at\\)|\\{at\\})(?:' + LABEL + DOT + ')+' + TLD + '(?![a-z0-9-])', 'gi'),
     ipv4: new RegExp('(?<![\\d.])' + OCTET + '(?:' + DOT + OCTET + '){3}(?:\\/(?:3[0-2]|[12]?\\d))?(?![\\d]|\\.\\d)', 'g'),
     ipv6: /(?<![0-9a-f:])(?:[0-9a-f]{0,4}:){2,7}[0-9a-f]{0,4}(?![0-9a-f:])/gi,
     sha256: /(?<![0-9a-f])[0-9a-f]{64}(?![0-9a-f])/gi,
     sha1: /(?<![0-9a-f])[0-9a-f]{40}(?![0-9a-f])/gi,
     md5: /(?<![0-9a-f])[0-9a-f]{32}(?![0-9a-f])/gi,
     cve: /\bCVE-\d{4}-\d{4,7}\b/gi,
+    registry: /\b(?:HKLM|HKCU|HKCR|HKU|HKCC|HKEY_LOCAL_MACHINE|HKEY_CURRENT_USER|HKEY_CLASSES_ROOT|HKEY_USERS|HKEY_CURRENT_CONFIG):?\\[^\s"'<>|]+/g,
+    btc: /(?<![a-z0-9])(?:bc1[ac-hj-np-z02-9]{11,71}|[13][a-km-zA-HJ-NP-Z1-9]{25,34})(?![a-z0-9])/gi,
+    asn: /(?<![a-z0-9])AS\d{1,10}(?!\d)/g,
+    filename: new RegExp('(?<![a-z0-9@_$\\\\/.-])(?:[a-z]:\\\\|\\\\\\\\[\\w.$-]+\\\\|%[a-z]+%\\\\)?(?:[\\w.$-]+\\\\)*[\\w$-][\\w.$-]{0,120}\\.(?:' + FILE_EXT + ')(?![a-z0-9_-])', 'gi'),
     domain: new RegExp('(?<![a-z0-9@._-])(?:' + LABEL + DOT + ')+' + TLD + '(?![a-z0-9-]|' + DOT + '[a-z0-9])', 'gi')
   };
-  const ORDER = ['url', 'email', 'ipv4', 'ipv6', 'sha256', 'sha1', 'md5', 'cve', 'domain'];
+  const ORDER = ['url', 'email', 'registry', 'ipv4', 'ipv6', 'sha256', 'sha1', 'md5', 'cve', 'filename', 'btc', 'asn', 'domain'];
 
   // In "strict" mode (auto-highlighting pages) these look like file names or code, not domains.
   const FILE_LIKE = new Set(['js', 'ts', 'css', 'html', 'htm', 'php', 'asp', 'aspx', 'jsp', 'json', 'xml', 'yml', 'yaml',
@@ -151,7 +159,7 @@
       .replace(/^hxxp/i, 'http').replace(/^fxp/i, 'ftp')
       .replace(/\[:\]\/\//g, '://').replace(/\[:\/\/\]/g, '://')
       .replace(/\[\.\]|\(\.\)|\{\.\}|\[dot\]|\(dot\)/gi, '.')
-      .replace(/\[@\]|\(@\)|\[at\]/gi, '@')
+      .replace(/\[@\]|\(@\)|\[at\]|\(at\)|\{at\}/gi, '@')
       .replace(/\[:\]/g, ':');
   }
 
@@ -205,12 +213,32 @@
     const tld = tldOf(d);
     if (/^\d+$/.test(tld) || !IANA_TLDS.has(tld)) return false;
     if (looksLikeField(labels)) return false;
+    if (labels.slice(0, -1).every((l) => /^\d+$/.test(l))) return false; // "1.2.3.zip" is a version, not a host
     if (!strict) return true;
     if (FILE_LIKE.has(tld) && !(labels.length >= 3 && (labels[0] === 'www' || COMMON_TLD.has(labels[labels.length - 2])))) return false;
     // Unknown long TLDs in prose (e.g. "object.property") only when it otherwise looks like a host.
     if (!COMMON_TLD.has(tld) && tld.length > 2 && !tld.startsWith('xn--') && labels.length < 3) return false;
     if (labels.every((l) => /^[a-z]+$/i.test(l)) && labels.length === 2 && labels[0].length <= 2 && !COMMON_TLD.has(tld)) return false;
     return true;
+  }
+
+  /** "readme.md", "C:\Users\Public\svchost.exe" are files. "cdn.example.zip" (3+ labels, real TLD, no path) or a defanged value stays a domain. */
+  function plausibleFile(value, raw) {
+    if (/[\[\]()]/.test(raw)) return false;
+    const hasPath = value.indexOf('\\') >= 0;
+    const name = value.split('\\').pop();
+    const labels = name.split('.');
+    const ext = labels[labels.length - 1].toLowerCase();
+    if (/^\d+(\.\d+)*$/.test(labels.slice(0, -1).join('.'))) return false;         // "1.2.zip" version-ish
+    if (!hasPath && labels.length >= 3 && IANA_TLDS.has(ext) && !/^(exe|dll|ps1|bat|vbs|hta|lnk|js|docx?|xlsx?|pdf|txt)$/.test(ext)) return false;
+    if (!hasPath && labels.length === 2 && labels[0].length < 2) return false;
+    return true;
+  }
+
+  /** Base58 addresses need mixed case and a digit, so plain words and hex hashes don't match. */
+  function plausibleBtc(v) {
+    if (/^bc1/i.test(v)) return v === v.toLowerCase() || v === v.toUpperCase();
+    return /[A-Z]/.test(v) && /[a-z]/.test(v) && /\d/.test(v.slice(1)) && !/[0OIl]/.test(v);
   }
 
   function isPrivateIp(ip) {
@@ -227,8 +255,10 @@
       || (o[0] === 198 && (o[1] === 18 || o[1] === 19));
   }
 
-  const GROUP = { url: 'url', domain: 'domain', ipv4: 'ip', ipv6: 'ip', email: 'email', md5: 'hash', sha1: 'hash', sha256: 'hash', cve: 'cve' };
-  const LABEL_OF = { url: 'URL', domain: 'Domain', ipv4: 'IPv4', ipv6: 'IPv6', email: 'Email', md5: 'MD5', sha1: 'SHA-1', sha256: 'SHA-256', cve: 'CVE' };
+  const GROUP = { url: 'url', domain: 'domain', ipv4: 'ip', ipv6: 'ip', email: 'email', md5: 'hash', sha1: 'hash', sha256: 'hash', cve: 'cve',
+    filename: 'file', registry: 'registry', btc: 'crypto', asn: 'asn' };
+  const LABEL_OF = { url: 'URL', domain: 'Domain', ipv4: 'IPv4', ipv6: 'IPv6', email: 'Email', md5: 'MD5', sha1: 'SHA-1', sha256: 'SHA-256', cve: 'CVE',
+    filename: 'File name', registry: 'Registry key', btc: 'Bitcoin address', asn: 'ASN' };
 
   function normalize(type, raw) {
     let v = refang(raw);
@@ -236,7 +266,8 @@
     if (type === 'ipv4') v = v.split('/')[0];
     if (type === 'domain' || type === 'email') v = v.toLowerCase().replace(/\.$/, '');
     if (type === 'md5' || type === 'sha1' || type === 'sha256' || type === 'ipv6') v = v.toLowerCase();
-    if (type === 'cve') v = v.toUpperCase();
+    if (type === 'cve' || type === 'asn') v = v.toUpperCase();
+    if (type === 'registry') v = v.replace(/[.,;:!?'")\]]+$/, '');
     return v;
   }
 
@@ -266,6 +297,8 @@
         if (type === 'domain' && (!plausibleDomain(value, strict) || followedByKeySep(text, end))) continue;
         if (strict && (type === 'md5' || type === 'sha1' || type === 'sha256') && (/^\d+$/.test(value) || /^[a-f]+$/.test(value))) continue;
         if (type === 'url') { try { new URL(value); } catch (_) { continue; } }
+        if (type === 'filename' && !plausibleFile(value, raw)) continue;
+        if (type === 'btc' && !plausibleBtc(value)) continue;
         taken.push([start, end]);
         out.push({ type, group: GROUP[type], value, raw, start, end });
       }

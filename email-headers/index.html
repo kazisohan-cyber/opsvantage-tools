@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Email Header Analyzer: SPF, DKIM, DMARC &amp; Spoofing | OpsVantage Tools</title>
-<meta name="description" content="Free email header analyzer: paste raw headers or drop an .eml file to see SPF, DKIM and DMARC results, the delivery path, the originating IP and signs of spoofing or business email compromise. Runs in your browser.">
+<meta name="description" content="Free email header analyzer: paste raw headers or drop an .eml file to see SPF, DKIM and DMARC results, the delivery path, the originating IP, hidden link destinations, risky attachments with their hashes and signs of spoofing or business email compromise. Runs in your browser.">
 <link rel="canonical" href="https://tools.opsvantage.net/email-headers/">
 <meta name="theme-color" content="#0A0D18">
 <link rel="icon" type="image/png" href="../assets/logo.png">
@@ -52,8 +52,8 @@
   <div class="tool-head">
     <div class="crumbs"><a href="../">Tools</a> / Email Header Analyzer</div>
     <h1>Email Header <em>Analyzer</em></h1>
-    <p class="lead">Paste the raw headers of a suspicious email, or drop the .eml file. You get SPF, DKIM and DMARC results, the full delivery path, the originating IP and the red flags of spoofing and business email compromise, with a plain-language verdict.</p>
-    <span class="privacy-note">● Runs in your browser. Headers and .eml files never leave your device.</span>
+    <p class="lead">Paste the raw headers of a suspicious email, or drop the .eml file. You get SPF, DKIM and DMARC results, the full delivery path, the originating IP and the red flags of spoofing and business email compromise, with a plain-language verdict. Drop the whole .eml and you also get every link (with its real destination) and every attachment (with its SHA-256 and a warning for risky file types).</p>
+    <span class="privacy-note">● Runs in your browser. Headers and .eml files never leave your device, and nothing in the email is opened or rendered.</span>
   </div>
 
   <div class="workspace">
@@ -120,6 +120,7 @@
 <script src="../assets/lib/analyzer.js"></script>
 <script src="../assets/lib/ioc.js"></script>
 <script src="../assets/lib/headers.js"></script>
+<script src="../assets/lib/eml.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
