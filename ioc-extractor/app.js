@@ -84,7 +84,11 @@
       'Put the ones you confirm as bad on your blocklist: "Copy" on a group gives a clean list, or download the CSV.',
       'Paste "Copy text with IOCs defanged" into the ticket or chat, so nobody clicks a live link by accident.'
     ]);
-    out.innerHTML = steps + GROUPS.map(function (g) {
+    var COLORS = { url: '#E42BA1', domain: '#a855f7', ip: '#3b82f6', email: '#14b8a6', hash: '#f97316', cve: '#ef4444', file: '#eab308', registry: '#84cc16', asn: '#06b6d4', crypto: '#f59e0b' };
+    var chart = window.OVCharts && items.length > 1 ? '<div class="viz">' + window.OVCharts.donut(GROUPS.map(function (g) {
+      return { label: g.label, value: n(g.key), color: COLORS[g.key] };
+    }), String(items.length), 112) + '</div>' : '';
+    out.innerHTML = steps + chart + GROUPS.map(function (g) {
       var list = items.filter(function (x) { return x.group === g.key; });
       if (!list.length) return '';
       return '<div class="group"><div class="group-h"><span><b>' + g.label + '</b><span class="count">' + list.length +

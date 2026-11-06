@@ -60,7 +60,9 @@
 
   // ---------------------------------------------------------------- checks ---
 
-  async function countLookups(rec, depth, seen) {
+  // Counts the DNS lookups SPF evaluation needs (RFC 7208 limit: 10) and, when node is given, records the
+  // include tree as { name, record, lookups, children } for the visual SPF tree.
+  async function countLookups(rec, depth, seen, node) {
     if (depth > 8) return 0;
     var n = 0, nested = [];
     rec.split(/\s+/).slice(1).forEach(function (term) {
@@ -69,13 +71,20 @@
       if (m) {
         n++;
         var target = m[1];
-        if (target.indexOf('%{') >= 0 || seen.has(target)) return;
+        var child = node ? { name: target, kind: t.indexOf('redirect') === 0 ? 'redirect' : 'include', record: '', lookups: 1, children: [] } : null;
+        if (child) node.children.push(child);
+        if (target.indexOf('%{') >= 0 || seen.has(target)) { if (child) child.note = seen.has(target) ? 'already counted' : 'macro'; return; }
         seen.add(target);
         nested.push(txt(target).then(function (r) {
           var sub = r.records.find(isSpf);
-          return sub ? countLookups(sub, depth + 1, seen) : 0;
-        }).catch(function () { return 0; }));
-      } else if (/^(a|mx|ptr|exists)([:/]|$)/.test(t)) n++;
+          if (child) child.record = sub || '';
+          if (!sub) { if (child) child.note = 'no SPF record'; return 0; }
+          return countLookups(sub, depth + 1, seen, child).then(function (k) { if (child) child.lookups = 1 + k; return k; });
+        }).catch(function () { if (child) child.note = 'lookup failed'; return 0; }));
+      } else if (/^(a|mx|ptr|exists)([:/]|$)/.test(t)) {
+        n++;
+        if (node) node.children.push({ name: term.replace(/^[+\-~?]/, ''), kind: 'mech', lookups: 1, children: [] });
+      }
     });
     var subs = await Promise.all(nested);
     return subs.reduce(function (a, b) { return a + b; }, n);
@@ -90,7 +99,8 @@
     var allm = rec.match(/(?:^|\s)([+\-~?]?)all(?:\s|$)/i);
     var q = allm ? (allm[1] || '+') : null;
     var redirect = /(?:^|\s)redirect=/i.test(rec);
-    res.lookups = await countLookups(rec, 0, new Set([d]));
+    res.tree = { name: d, kind: 'root', record: rec, children: [] };
+    res.lookups = await countLookups(rec, 0, new Set([d]), res.tree);
     res.score = q === '-' ? 25 : q === '~' ? 20 : q === '?' ? 5 : q === '+' ? 0 : redirect ? 20 : 5;
     if (q === '-') res.issues.push(['good', 'Ends with -all: mail from unlisted servers fails SPF.']);
     else if (q === '~') res.issues.push(['warn', 'Ends with ~all (softfail). Fine while DMARC enforces; switch to -all once every sender is listed.']);

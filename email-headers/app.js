@@ -94,6 +94,7 @@
     $('out').innerHTML = html;
 
     $('hop-count').textContent = r.hops.length;
+    $('path-viz').innerHTML = pathViz(r);
     $('hops').innerHTML = '<thead><tr><th>#</th><th>From</th><th>By</th><th>Protocol</th><th>IP</th><th>Delay</th></tr></thead><tbody>' +
       (r.hops.length ? r.hops.map(function (h, i) {
         var priv = h.ip && I.isPrivateIp(h.ip);
@@ -107,6 +108,37 @@
     var rows = [['From', s.from], ['Reply-To', s.replyTo], ['Return-Path', s.returnPath], ['To', s.to], ['Subject', s.subject], ['Date', s.date], ['Message-ID', s.messageId], ['Mailer', s.mailer], ['Originating IP', r.origin]];
     $('summary').innerHTML = rows.filter(function (x) { return x[1]; }).map(function (x) { return '<dt>' + x[0] + '</dt><dd class="' + (x[0] === 'Message-ID' || x[0] === 'Originating IP' ? 'mono' : '') + '">' + OV.esc(x[1]) + '</dd>'; }).join('');
     $('details').hidden = false;
+  }
+
+  // The route as boxes: sender → each relay → recipient, with the time spent on every hop.
+  function pathViz(r) {
+    if (!r.hops.length) return '<p class="sub">No Received headers, so the route can\'t be drawn.</p>';
+    var C = window.OVCharts;
+    var nodes = [];
+    var first = r.hops[0];
+    nodes.push({ k: 'Sender', host: first.from || 'unknown', ip: first.ip, origin: first.ip && first.ip === r.origin });
+    r.hops.forEach(function (h, i) {
+      var next = r.hops[i + 1];
+      nodes.push({ k: i === r.hops.length - 1 ? 'Delivered by' : 'Relay', host: h.by || '?', ip: next ? next.ip : '', origin: next && next.ip && next.ip === r.origin, last: i === r.hops.length - 1, delay: h.delay, proto: h.with });
+    });
+    var html = '<div class="path" role="list" aria-label="Delivery route, oldest first">';
+    nodes.forEach(function (n, i) {
+      if (i) {
+        var d = n.delay;
+        html += '<div class="hop-link' + (d != null && d > 600 ? ' slow' : '') + '" aria-hidden="true"><span>' + (d == null ? (n.proto ? OV.esc(n.proto) : '→') : fmtDelay(d).replace(/<[^>]+>/g, '')) + '</span></div>';
+      }
+      var priv = n.ip && I.isPrivateIp(n.ip);
+      html += '<div class="hop' + (n.origin ? ' origin' : '') + (n.last ? ' me' : '') + '" role="listitem"><div class="hop-k">' + n.k + (n.origin ? ' · origin' : '') + '</div><b>' + OV.esc(n.host) + '</b>' +
+        (n.ip ? '<div class="ip">' + OV.esc(n.ip) + ' <span class="pill' + (priv ? '' : ' warn') + '">' + (priv ? 'private' : 'public') + '</span></div>' : '') + '</div>';
+    });
+    html += '</div>';
+    var withDelay = r.hops.filter(function (h) { return h.delay != null; });
+    if (C && withDelay.length) {
+      var total = withDelay.reduce(function (a, h) { return a + Math.max(0, h.delay); }, 0);
+      html += '<div class="viz" style="margin-top:6px"><h3>Time spent on each hop · total ' + fmtDelay(total).replace(/<[^>]+>/g, '') + '</h3>' +
+        C.bars(withDelay.map(function (h) { return { label: h.by || '?', value: Math.max(0, h.delay), note: fmtDelay(h.delay).replace(/<[^>]+>/g, ''), color: h.delay > 600 ? 'var(--amber)' : h.delay < 0 ? '#ef4444' : 'var(--pink)' }; })) + '</div>';
+    }
+    return html;
   }
 
   function emailSteps(r) {

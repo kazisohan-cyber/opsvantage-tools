@@ -234,6 +234,38 @@
     [/risk/i, { t: 'Open the user in Entra ID Protection, confirm or dismiss the risk, and reset the password if it was them.' }],
     [/without MFA/i, { t: 'Require MFA for these sign-ins with Conditional Access, or confirm they came from trusted locations.' }]
   ];
+  // Where the sign-ins came from (with impossible-travel arcs) and when they happened (UTC day x hour).
+  function signinViz(L, findings) {
+    var C = window.OVCharts;
+    if (!C) return '';
+    var places = {};
+    L.forEach(function (s) {
+      var p = pos(s);
+      if (!p) return;
+      var k = s.country || (Math.round(p[0]) + ',' + Math.round(p[1]));
+      var o = places[k] || (places[k] = { lat: p[0], lon: p[1], n: 0, bad: 0, c: s.country || '?', users: new Set() });
+      o.n++; if (s.status !== 'success') o.bad++; o.users.add(s.user);
+    });
+    var points = Object.keys(places).map(function (k) { var o = places[k]; return { lat: o.lat, lon: o.lon, n: o.n, bad: o.bad, label: o.c + ': ' + o.n + ' sign-in(s), ' + o.bad + ' failed, ' + o.users.size + ' user(s)' }; });
+    var arcs = [];
+    findings.filter(function (f) { return /impossible travel/i.test(f.title); }).forEach(function (f) {
+      for (var i = 0; i + 1 < f.rows.length; i += 2) {
+        var a = pos(f.rows[i]), b = pos(f.rows[i + 1]);
+        if (a && b) arcs.push({ a: a, b: b, label: f.rows[i].user + ': ' + (f.rows[i].country || '?') + ' → ' + (f.rows[i + 1].country || '?') });
+      }
+    });
+    var cells = [];
+    for (var d = 0; d < 7; d++) { cells.push([]); for (var h = 0; h < 24; h++) cells[d].push({ n: 0, bad: 0 }); }
+    L.forEach(function (s) {
+      if (!s.time) return;
+      var dt = new Date(s.time), c = cells[(dt.getUTCDay() + 6) % 7][dt.getUTCHours()];
+      c.n++; if (s.status !== 'success') c.bad++;
+    });
+    var map = points.length ? C.worldMap(points, arcs) : '';
+    return '<div class="viz">' + (map ? '<h3>Where the sign-ins came from</h3>' + map : '') +
+      '<h3 style="margin-top:' + (map ? '14px' : '0') + '">When they happened</h3>' + C.heatmap(cells, { label: 'Sign-ins by weekday and hour', tz: 'Times in UTC' }) + '</div>';
+  }
+
   function signinSteps(findings) {
     if (!findings.length) return OV.nextSteps(['No rule matched. Check that the export covers enough days and includes failed sign-ins.']);
     var seen = {}, steps = [];
@@ -273,6 +305,7 @@
       '<div class="stat"><b style="color:#ef4444">' + (cnt('crit') + cnt('high')) + '</b><span>critical / high</span></div></div>';
     if (times.length) html += '<p class="sub" style="margin:-4px 0 12px;font-size:.82rem">' + fmt(last.from) + ' → ' + fmt(last.to) + (home ? ' · home country ' + home + (homeIn ? '' : ' (auto)') : '') + '</p>';
     html += signinSteps(findings);
+    html += signinViz(L, findings);
     html += findings.length ? findings.map(function (f) {
       return '<div class="finding"><div class="finding-h"><span class="sev ' + f.sev + '">' + SEV_LABEL[f.sev] + '</span><b>' + OV.esc(f.title) + '</b>' +
         (f.mitre ? '<span class="pill">' + OV.esc(f.mitre) + '</span>' : '') + '</div><p>' + OV.esc(f.detail) + '</p>' +

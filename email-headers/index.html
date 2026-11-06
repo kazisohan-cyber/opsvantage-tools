@@ -85,7 +85,8 @@
 
   <section class="panel" id="details" hidden style="margin-bottom:56px">
     <div class="panel-h"><h2>Delivery path <span class="count" id="hop-count"></span></h2><span class="sub" style="margin:0;font-size:.82rem">Oldest hop first</span></div>
-    <div class="table-wrap"><table class="data" id="hops"></table></div>
+    <div id="path-viz"></div>
+    <details class="sub" style="max-width:none;margin:6px 0 0"><summary style="cursor:pointer">Hop table</summary><div class="table-wrap"><table class="data" id="hops"></table></div></details>
     <div class="panel-h" style="margin-top:22px"><h2>Message details</h2></div>
     <dl class="kv" id="summary"></dl>
   </section>
@@ -121,6 +122,7 @@
 <script src="../assets/lib/ioc.js"></script>
 <script src="../assets/lib/headers.js"></script>
 <script src="../assets/lib/eml.js"></script>
+<script src="../assets/charts.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -358,6 +358,22 @@
     'T1562.001': { t: 'Turn the protection back on and find out who turned it off: attackers do this before running tools.' },
     'T1053.005': { t: 'Open the scheduled task, check its command and remove it if nobody can explain it.' }
   };
+  // Timeline of every event (coloured by how much the event ID matters) with a flag where each finding starts,
+  // plus the ATT&CK stages the findings cover.
+  function eventViz(events, findings) {
+    var C = window.OVCharts;
+    if (!C) return '';
+    var pts = events.map(function (e) { var i = info(e.id, e.provider); return { t: e.time, sev: i ? i.sev : 'info' }; });
+    var marks = findings.filter(function (f) { return f.sev !== 'info'; }).map(function (f) {
+      var ts = f.evs.map(function (e) { return e.time; }).filter(Boolean);
+      return { t: ts.length ? Math.min.apply(null, ts) : null, sev: f.sev, label: f.title };
+    });
+    var tl = C.timeline(pts, marks, { fmt: fmtTime });
+    var grid = C.attackGrid(findings);
+    if (!tl && !grid) return '';
+    return '<div class="viz">' + (tl ? '<h3>Timeline</h3>' + tl : '') + (grid ? '<h3 style="margin-top:' + (tl ? '6px' : '0') + '">Attack stages (MITRE ATT&amp;CK)</h3>' + grid : '') + '</div>';
+  }
+
   function eventSteps(findings) {
     var seen = {}, steps = [];
     // Within the same severity, the actions that stop damage spreading come first.
@@ -397,6 +413,7 @@
       '<div class="stat"><b style="color:var(--amber)">' + count('med') + '</b><span>medium</span></div></div>';
     if (last.from) html += '<p class="sub" style="margin:-4px 0 12px;font-size:.82rem">' + fmtTime(last.from) + ' → ' + fmtTime(last.to) + '</p>';
     html += eventSteps(findings);
+    html += eventViz(events, findings);
     html += findings.length ? findings.map(function (f, i) {
       return '<div class="finding"><div class="finding-h"><span class="sev ' + f.sev + '">' + SEV_LABEL[f.sev] + '</span><b>' + OV.esc(f.title) + '</b>' +
         (f.mitre ? '<span class="pill">' + OV.esc(f.mitre) + '</span>' : '') + '</div><p>' + OV.esc(f.detail) + '</p>' +

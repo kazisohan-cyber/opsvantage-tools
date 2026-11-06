@@ -24,6 +24,32 @@
 
   function grade(score) { return score >= 90 ? 'A' : score >= 75 ? 'B' : score >= 60 ? 'C' : score >= 40 ? 'D' : 'F'; }
 
+  // Where the domain is on the road from no DMARC to p=reject.
+  function journey(dm, noMail) {
+    var steps = [['none', 'No DMARC'], ['p=none', 'Monitoring'], ['quarantine', 'Quarantine'], ['reject', 'Reject']];
+    var at = !dm.records.length ? 0 : dm.policy === 'reject' ? (dm.pct === 100 ? 3 : 2) : dm.policy === 'quarantine' ? 2 : 1;
+    return '<div class="journey" role="img" aria-label="DMARC enforcement: step ' + (at + 1) + ' of 4">' + steps.map(function (s, i) {
+      return '<div class="j-step' + (i < at ? ' done' : i === at ? ' now' : '') + '"><i></i><b>' + s[1] + '</b><span>' + (i === at ? 'You are here' : i === 3 ? 'Goal' : '') + '</span></div>';
+    }).join('') + '</div>' + (at < 3 && !noMail ? '<p class="sub" style="font-size:.82rem;margin-top:6px">Each step tightens what receivers do with mail that fails DMARC. <a href="../guides/dmarc-none-to-reject/" style="color:var(--pink)">How to move safely →</a></p>' : '');
+  }
+
+  // Lookup meter (10 allowed) and the include tree, so it's obvious which include eats the budget.
+  function spfViz(spf) {
+    if (!spf.tree || !spf.records.length) return '';
+    var n = spf.lookups || 0, cells = '';
+    for (var i = 1; i <= Math.max(10, n); i++) cells += '<i class="' + (i <= n ? (i > 10 ? 'over' : n >= 8 ? 'warn' : 'on') : '') + (i === 10 ? ' limit' : '') + '"></i>';
+    var node = function (x, depth) {
+      var kids = x.children || [];
+      var label = '<span class="t-name">' + OV.esc(x.kind === 'include' || x.kind === 'redirect' ? x.kind + ':' + x.name : x.name) + '</span>' +
+        (x.kind !== 'root' ? '<span class="t-cost' + (x.lookups >= 4 ? ' heavy' : '') + '">' + x.lookups + ' lookup' + (x.lookups === 1 ? '' : 's') + '</span>' : '') +
+        (x.note ? '<span class="t-note">' + OV.esc(x.note) + '</span>' : '');
+      if (!kids.length) return '<li class="t-leaf">' + label + '</li>';
+      return '<li><details' + (depth < 1 ? ' open' : '') + '><summary>' + label + '</summary><ul>' + kids.map(function (k) { return node(k, depth + 1); }).join('') + '</ul></details></li>';
+    };
+    return '<div class="viz" style="margin-top:12px"><h3>DNS lookups: ' + n + ' of 10</h3><div class="meter' + (n > 10 ? ' bad' : '') + '" role="img" aria-label="' + n + ' of 10 SPF lookups used">' + cells + '</div>' +
+      '<h3 style="margin-top:14px">Include tree <span class="sub" style="font-weight:400;font-size:.78rem">click to expand</span></h3><ul class="tree">' + node(spf.tree, 0) + '</ul></div>';
+  }
+
   function render(d, R) {
     var spf = R.spf, dm = R.dmarc, dk = R.dkim, mx = R.mx;
     var noMail = mx.nullMx || !mx.mx.length;
@@ -37,7 +63,7 @@
         : ['bad', 'Can be spoofed', 'Anyone can send email that appears to come from @' + d + ', and most inboxes will deliver it.'];
 
     var html = '<section class="panel" style="margin-bottom:18px"><div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">' +
-      '<div class="grade ' + g + '" aria-label="Grade ' + g + '">' + g + '</div><div style="flex:1;min-width:220px">' +
+      (window.OVCharts ? window.OVCharts.gauge(score, g) : '<div class="grade ' + g + '" aria-label="Grade ' + g + '">' + g + '</div>') + '<div style="flex:1;min-width:220px">' +
       '<div class="mono" style="color:var(--muted)">' + OV.esc(d) + ' · ' + score + '/100</div>' +
       '<div class="verdict ' + spoof[0] + '" style="margin:8px 0 0;padding:10px 14px"><div><div class="v">' + spoof[1] + '</div><div class="sub" style="margin:2px 0 0">' + OV.esc(spoof[2]) + '</div></div></div></div>' +
       '<button class="btn btn-ghost btn-sm" type="button" id="copy-report">Copy report</button></div>' +
@@ -47,7 +73,7 @@
       '<div class="stat"><b>' + statePill(dk.state, dk.found.length ? dk.found.length + ' key' + (dk.found.length > 1 ? 's' : '') : 'not found') + '</b><span>DKIM ' + dk.score + '/20</span></div>' +
       '<div class="stat"><b>' + statePill(R.mtasts ? 'pass' : 'warn', R.mtasts ? 'on' : 'off') + '</b><span>MTA-STS</span></div>' +
       '<div class="stat"><b>' + statePill(R.tlsrpt ? 'pass' : 'warn', R.tlsrpt ? 'on' : 'off') + '</b><span>TLS-RPT</span></div>' +
-      '</div></section>';
+      '</div>' + journey(dm, noMail) + '</section>';
 
     html += '<section class="panel">';
     // MX
@@ -58,7 +84,7 @@
     html += '</div>';
 
     // SPF
-    html += '<div class="check"><div class="check-h"><b>SPF</b>' + statePill(spf.state, spf.score + '/25') + '</div>' + spf.records.map(recordBox).join('') + issueList(spf.issues);
+    html += '<div class="check"><div class="check-h"><b>SPF</b>' + statePill(spf.state, spf.score + '/25') + '</div>' + spf.records.map(recordBox).join('') + issueList(spf.issues) + spfViz(spf);
     if (!spf.records.length) {
       var inc = noMail ? '' : (mx.provider && mx.provider.spf) || 'include:YOUR-MAIL-PROVIDER';
       html += fixBox(noMail ? 'This domain sends no mail: publish a deny-all SPF record' : 'Add an SPF record (list every service that sends as ' + d + ')', d, ('v=spf1 ' + inc + ' -all').replace('  ', ' '));
