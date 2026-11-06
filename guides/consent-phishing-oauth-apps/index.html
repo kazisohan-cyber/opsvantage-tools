@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consent phishing: find risky OAuth apps in Microsoft 365 | OpsVantage Tools</title>
+<meta name="description" content="How consent phishing (illicit consent grant) gives an attacker mailbox access without a password, how to find risky OAuth apps and consents in Entra ID with the audit log and PowerShell, and how to revoke them and stop it happening again.">
+<link rel="canonical" href="https://tools.opsvantage.net/guides/consent-phishing-oauth-apps/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../../assets/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Consent phishing: find risky OAuth apps in Microsoft 365">
+<meta property="og:description" content="How consent phishing (illicit consent grant) gives an attacker mailbox access without a password, how to find risky OAuth apps and consents in Entra ID with the audit log and PowerShell, and how to revoke them and stop it happening again.">
+<meta property="og:url" content="https://tools.opsvantage.net/guides/consent-phishing-oauth-apps/">
+<script src="../../assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/hub.css">
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Consent phishing: find risky OAuth apps in Microsoft 365",
+    "description": "How consent phishing (illicit consent grant) gives an attacker mailbox access without a password, how to find risky OAuth apps and consents in Entra ID with the audit log and PowerShell, and how to revoke them and stop it happening again.",
+    "url": "https://tools.opsvantage.net/guides/consent-phishing-oauth-apps/",
+    "datePublished": "2026-11-06",
+    "dateModified": "2026-11-06",
+    "inLanguage": "en",
+    "author": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Does resetting the password remove an OAuth app's access?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. The app holds a token granted by consent, not the password. Remove the consent, disable the app and revoke the user's sessions; a password reset alone leaves the app working."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does MFA protect against consent phishing?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. The user completes MFA as part of the attack. Restricting user consent to verified publishers and low-risk permissions is what blocks it."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is the difference between delegated and application permissions?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Delegated permissions act as one signed-in user and only reach what that user can reach. Application permissions act as the app itself across the whole tenant and always need admin consent, which makes an unknown app with application permissions far more serious."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is an unverified publisher always malicious?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. Many small vendors and internal tools are unverified. Treat it as a reason to look closer, together with the permissions, the reply URL and who consented."
+        }
+      }
+    ]
+  }
+]
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../../"><img src="../../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../../#tools">Tools</a>
+      <a class="link opt" href="../../guides/">Guides</a>
+      <a class="link opt" href="../../events/">Event IDs</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main class="wrap"><!--email_off-->
+  <article class="article">
+    <div class="tool-head">
+      <div class="crumbs"><a href="../../">Tools</a> / <a href="../">Guides</a> / Consent phishing and OAuth apps</div>
+      <h1>Consent phishing: find risky <em>OAuth apps</em> in Microsoft 365</h1>
+      <p class="lead">How consent phishing (illicit consent grant) gives an attacker mailbox access without a password, how to find risky OAuth apps and consents in Entra ID with the audit log and PowerShell, and how to revoke them and stop it happening again.</p>
+      <div class="meta-line">Updated 2026-11-06 · 8 min read</div>
+    </div>
+<p>Consent phishing doesn't steal a password. The user clicks a link, signs in to the real Microsoft login page with their real MFA, and then sees a genuine Microsoft prompt: <em>"Mailbox Sync wants to read your mail and maintain access to data you have given it access to."</em> They click Accept. From that moment an app the attacker controls can read their mail through Microsoft Graph, and it keeps working after you reset the password.</p>
+<p>Microsoft calls this an illicit consent grant. It's harder to spot than credential phishing because nothing about the sign-in looks wrong: right user, right MFA, often the user's own IP. The evidence is in the app consents and the audit log, which is where this guide looks for risky OAuth apps in Microsoft 365.</p>
+
+<h2>How does consent phishing work?</h2>
+<p>The attacker registers a multitenant app in their own Entra tenant, gives it a believable name and logo, and asks for delegated permissions such as <code>Mail.Read</code> and <code>offline_access</code>. The phishing email links to a normal Microsoft authorization URL:</p>
+<pre><code>https://login.microsoftonline.com/common/oauth2/v2.0/authorize
+  ?client_id=7f3c…&amp;response_type=code
+  &amp;redirect_uri=https://mailbox-sync.example/callback
+  &amp;scope=Mail.Read%20Mail.Send%20offline_access</code></pre>
+<p>Every link in that chain is real Microsoft infrastructure until the final redirect, so URL filters and user training aimed at fake login pages don't catch it. Once the user consents, the app receives a refresh token. <code>offline_access</code> is the permission that lets it keep getting new access tokens for weeks without the user being present.</p>
+<div class="callout"><p><strong>Why MFA doesn't help here:</strong> the user did complete MFA. The app isn't signing in as the user with a password; it holds a token the user willingly granted. That's also why a password reset on its own doesn't end the access.</p></div>
+
+<h2>Which permissions should worry me?</h2>
+<p>Not every consent is a problem. Plenty of legitimate apps ask for <code>User.Read</code> to show your name and photo. The ones worth a closer look are the permissions that read or send data:</p>
+<div class="table-wrap"><table>
+  <tr><th>Permission</th><th>What the app can do</th></tr>
+  <tr><td><code>Mail.Read</code>, <code>Mail.ReadWrite</code></td><td>Read (and change or delete) everything in the mailbox</td></tr>
+  <tr><td><code>Mail.Send</code></td><td>Send mail as the user, which is ideal for internal phishing</td></tr>
+  <tr><td><code>MailboxSettings.ReadWrite</code></td><td>Create forwarding and inbox rules</td></tr>
+  <tr><td><code>Files.Read.All</code>, <code>Files.ReadWrite.All</code>, <code>Sites.Read.All</code></td><td>Every OneDrive and SharePoint file the user can open</td></tr>
+  <tr><td><code>Contacts.Read</code>, <code>People.Read</code></td><td>The user's contacts, to pick the next targets</td></tr>
+  <tr><td><code>full_access_as_user</code> (EWS)</td><td>Full mailbox access through Exchange Web Services</td></tr>
+  <tr><td><code>offline_access</code></td><td>Keep access without the user present. Harmless alone, but it turns any of the above into persistent access</td></tr>
+</table></div>
+<p>Application permissions (as opposed to delegated) need admin consent and apply to every mailbox, not one user. An unknown app holding <code>Mail.Read</code> as an application permission is the worst case you can find in this review.</p>
+
+<h2>How do I find risky OAuth apps in the tenant?</h2>
+<p>Start in the Entra admin center under <em>Enterprise applications</em>. Set the <em>Application type</em> filter to <em>All applications</em>, because the default view hides some. For each app you don't recognise, open <em>Permissions</em> and look at both the <em>Admin consent</em> and <em>User consent</em> tabs.</p>
+<p>Clicking through doesn't scale past a few dozen apps. This Microsoft Graph PowerShell lists every delegated grant that touches mail, files or contacts, with the publisher and who granted it:</p>
+<pre><code>Connect-MgGraph -Scopes "Directory.Read.All"
+$risky = 'Mail\.|Files\.|Sites\.|Contacts\.|MailboxSettings|full_access_as_user'
+Get-MgOauth2PermissionGrant -All | Where-Object { $_.Scope -match $risky } | ForEach-Object {
+  $sp = Get-MgServicePrincipal -ServicePrincipalId $_.ClientId
+  [pscustomobject]@{
+    App       = $sp.DisplayName
+    Publisher = $sp.VerifiedPublisher.DisplayName
+    OwnerTenant = $sp.AppOwnerOrganizationId
+    Scope     = $_.Scope.Trim()
+    GrantedTo = if ($_.ConsentType -eq 'AllPrincipals') { 'All users' } else { (Get-MgUser -UserId $_.PrincipalId).UserPrincipalName }
+    GrantId   = $_.Id
+  }
+} | Sort-Object App | Format-Table -AutoSize</code></pre>
+<p>An empty <code>Publisher</code> means the publisher isn't verified. That alone doesn't make an app malicious (lots of small vendors never bother), but almost every consent phishing app is unverified.</p>
+
+<h2>What does a malicious app usually look like?</h2>
+<ul>
+  <li><strong>A generic or Microsoft-sounding name</strong>: "Mail Sync", "Office 365 Security Update", "Secure Document Viewer". Microsoft's own apps belong to a Microsoft tenant and don't need a user to consent to mail access.</li>
+  <li><strong>Consented by one or two users</strong>, recently, rather than rolled out by IT to a department.</li>
+  <li><strong>A reply URL on a young or unrelated domain.</strong> You'll find it on the app's overview page; check it the way you'd check any suspicious domain.</li>
+  <li><strong>Consent granted minutes after a phishing email</strong> landed in the same mailbox.</li>
+  <li><strong>Heavy mail permissions for an app that has no reason to need them</strong>, such as a "PDF viewer" asking for <code>Mail.Send</code>.</li>
+</ul>
+
+<h2>When was consent granted, and by whom?</h2>
+<p>The Entra audit log records every consent as <em>Consent to application</em>. If the logs go to Sentinel or Log Analytics, this query shows who consented to what, and with which permissions:</p>
+<pre><code>AuditLogs
+| where TimeGenerated &gt; ago(30d)
+| where OperationName == "Consent to application"
+| extend User = tostring(InitiatedBy.user.userPrincipalName),
+         App  = tostring(TargetResources[0].displayName)
+| mv-expand Prop = TargetResources[0].modifiedProperties
+| where tostring(Prop.displayName) == "ConsentAction.Permissions"
+| project TimeGenerated, User, App, Permissions = tostring(Prop.newValue), Result
+| order by TimeGenerated desc</code></pre>
+<p>Without Sentinel, filter the audit log in the Entra admin center by <em>Activity: Consent to application</em>. Then open the user's non-interactive sign-ins and filter by the app name: that shows when the app actually used its token, and from which IPs. A legitimate SaaS app comes from its vendor's cloud ranges; an attacker's app often shows hosting providers or VPN exits.</p>
+
+<h2>How do I revoke the access?</h2>
+<ol>
+  <li><strong>Disable the app first</strong> so it can't get new tokens while you investigate: on the enterprise app, set <em>Enabled for users to sign in?</em> to <em>No</em>, or run <code>Update-MgServicePrincipal -ServicePrincipalId &lt;id&gt; -AccountEnabled:$false</code>.</li>
+  <li><strong>Remove the grants</strong> with <code>Remove-MgOauth2PermissionGrant -OAuth2PermissionGrantId &lt;GrantId&gt;</code>, then delete the enterprise app once you've kept what you need for the record.</li>
+  <li><strong>Revoke the user's sessions</strong> with <code>Revoke-MgUserSignInSession</code>. That invalidates refresh tokens already issued, including the one the app holds.</li>
+  <li><strong>Check what the app did.</strong> Look for new inbox rules and forwarding (the <a href="../m365-inbox-rules-forwarding/">inbox rules guide</a> has the searches), sent mail the user didn't write, and OneDrive files accessed by the app.</li>
+  <li><strong>Find other victims.</strong> Search the audit log for the same app ID across all users. Consent phishing campaigns usually hit several people in one tenant on the same day.</li>
+</ol>
+
+<h2>How do I stop users consenting to risky apps?</h2>
+<p>The fix is a setting most small tenants have never touched. Under <em>Enterprise applications &gt; Consent and permissions &gt; User consent settings</em>, choose either <em>Do not allow user consent</em> or <em>Allow user consent for apps from verified publishers, for selected permissions</em>. The second option is a sensible middle ground: users can still sign in to well-known apps, but nothing unverified gets mail or file access without an admin.</p>
+<p>Then turn on the <strong>admin consent workflow</strong>, so a blocked user can request the app instead of asking IT to open consent back up for everyone. Without the workflow, the first complaint from a manager tends to undo the whole change.</p>
+<p>If you're also tightening sign-in controls, the <a href="../mfa-fatigue-push-bombing/">MFA fatigue guide</a> covers the other common way attackers get around MFA in Entra ID.</p>
+
+<h2>FAQ</h2>
+<h3>Does resetting the password remove an OAuth app's access?</h3>
+<p>No. The app holds a token granted by consent, not the password. Remove the consent, disable the app and revoke the user's sessions; a password reset alone leaves the app working.</p>
+<h3>Does MFA protect against consent phishing?</h3>
+<p>No. The user completes MFA as part of the attack. Restricting user consent to verified publishers and low-risk permissions is what blocks it.</p>
+<h3>What is the difference between delegated and application permissions?</h3>
+<p>Delegated permissions act as one signed-in user and only reach what that user can reach. Application permissions act as the app itself across the whole tenant and always need admin consent, which makes an unknown app with application permissions far more serious.</p>
+<h3>Is an unverified publisher always malicious?</h3>
+<p>No. Many small vendors and internal tools are unverified. Treat it as a reason to look closer, together with the permissions, the reply URL and who consented.</p>
+    <div class="next">
+      <div><b>List every risky app consent in the tenant</b><p>M365 Posture Scanner checks whether users can consent to apps on their own and lists third-party apps holding mail and file permissions, with publisher and who granted them. Read-only, runs in your browser.</p></div>
+      <a class="btn btn-primary" href="../../m365-posture/">Open Posture Scanner</a>
+    </div>
+    <div class="next">
+      <div><b>Check the app's reply domain</b><p>IOC Triage, our free browser extension: right-click the redirect domain or the IP that granted consent for a verdict from 15 threat-intel sources, then copy a ticket note.</p></div>
+      <a class="btn btn-ghost" href="https://chromewebstore.google.com/detail/dncgneacahomieionjkaofmfnojlkfmc?utm_source=tools.opsvantage.net&amp;utm_medium=guide&amp;utm_campaign=consent-phishing-oauth-apps">Add IOC Triage to Chrome</a>
+    </div>
+  </article>
+<!--/email_off--></main>
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../../">All tools</a> · <a href="../../guides/">Guides</a> · <a href="../../privacy/">Privacy &amp; terms</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../../assets/hub.js"></script>
+</body>
+</html>
