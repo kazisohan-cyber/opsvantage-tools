@@ -19,11 +19,11 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://tools.opsvantage.net/assets/media/m365-posture-og.jpg">
-<script src="../assets/theme.js?v=202611070711"></script>
+<script src="../assets/theme.js?v=202611070723"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../assets/hub.css?v=202611070711">
+<link rel="stylesheet" href="../assets/hub.css?v=202611070723">
 <style>
   .connect{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;padding-bottom:40px}
   @media (max-width:900px){.connect{grid-template-columns:1fr}}
@@ -46,6 +46,12 @@
   .grade.A,.grade.B{color:var(--live);border-color:color-mix(in srgb,var(--live) 55%,transparent)}
   .grade.C{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 55%,transparent)}
   .grade.D,.grade.F{color:#ef4444;border-color:color-mix(in srgb,#ef4444 55%,transparent)}
+  .posture-viz{display:grid;grid-template-columns:minmax(260px,380px) 1fr;gap:18px;align-items:center;margin-top:16px}
+  .posture-viz .cats{grid-template-columns:1fr;margin-top:0}
+  .ch-radar{width:100%;height:auto;display:block}
+  .ch-rl{font:600 16px var(--body);fill:var(--muted)}
+  .ch-rv{font-family:var(--mono);fill:var(--text)}
+  @media (max-width:760px){.posture-viz{grid-template-columns:1fr}}
   .cats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px 22px;margin-top:16px}
   @media (max-width:640px){.cats{grid-template-columns:1fr}}
   .cat-h{display:flex;justify-content:space-between;font-size:.86rem;margin-bottom:4px}
@@ -165,14 +171,15 @@
     <span><a href="../">All tools</a> · <a href="../privacy/">Privacy &amp; terms</a> · <a href="../how-it-works/">How it works</a> · <a href="../changelog/">Changelog</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
   </div>
 </footer>
-<script src="../assets/hub.js?v=202611070711"></script>
-<script src="../assets/lib/mailauth.js?v=202611070711"></script>
-<script src="config.js?v=202611070711"></script>
-<script src="auth.js?v=202611070711"></script>
-<script src="graph.js?v=202611070711"></script>
-<script src="demo-data.js?v=202611070711"></script>
-<script src="collect.js?v=202611070711"></script>
-<script src="checks.js?v=202611070711"></script>
-<script src="app.js?v=202611070711"></script>
+<script src="../assets/hub.js?v=202611070723"></script>
+<script src="../assets/lib/mailauth.js?v=202611070723"></script>
+<script src="config.js?v=202611070723"></script>
+<script src="auth.js?v=202611070723"></script>
+<script src="graph.js?v=202611070723"></script>
+<script src="demo-data.js?v=202611070723"></script>
+<script src="collect.js?v=202611070723"></script>
+<script src="checks.js?v=202611070723"></script>
+<script src="../assets/charts.js?v=202611070723"></script>
+<script src="app.js?v=202611070723"></script>
 </body>
 </html>

@@ -201,5 +201,29 @@
       '<text x="12" y="' + ((T + H - B) / 2) + '" text-anchor="middle" class="ch-ax" transform="rotate(-90 12 ' + ((T + H - B) / 2) + ')">' + esc(opts.yLabel || '') + '</text></svg></div>';
   }
 
-  window.OVCharts = { scatter: scatter, gauge: gauge, bars: bars, donut: donut, timeline: timeline, heatmap: heatmap, attackGrid: attackGrid, worldMap: worldMap, SEV_COLOR: SEV_COLOR };
+  /** Radar: axes [{label, value 0-100}], with a dashed "good" ring (opts.target, default 80). */
+  function radar(axes, opts) {
+    opts = opts || {};
+    var n = axes.length;
+    if (n < 3) return '';
+    var S = 340, c = S / 2, R = 108, target = opts.target == null ? 80 : opts.target;
+    var pt = function (i, v) { var a = -Math.PI / 2 + 2 * Math.PI * i / n, r = R * Math.max(0, Math.min(100, v)) / 100; return [round(c + r * Math.cos(a)), round(c + r * Math.sin(a))]; };
+    var ring = function (v) { return axes.map(function (_, i) { return pt(i, v).join(','); }).join(' '); };
+    var grid = [25, 50, 75, 100].map(function (v) { return '<polygon points="' + ring(v) + '" fill="none" stroke="var(--line-2)"/>'; }).join('') +
+      axes.map(function (_, i) { var p = pt(i, 100); return '<line x1="' + c + '" y1="' + c + '" x2="' + p[0] + '" y2="' + p[1] + '" stroke="var(--line)"/>'; }).join('');
+    var shape = axes.map(function (a, i) { return pt(i, a.value).join(','); }).join(' ');
+    var avg = axes.reduce(function (s, a) { return s + a.value; }, 0) / n;
+    var col = avg >= 80 ? 'var(--live)' : avg >= 50 ? 'var(--amber)' : '#ef4444';
+    var labels = axes.map(function (a, i) {
+      var p = pt(i, 122), anchor = Math.abs(p[0] - c) < 8 ? 'middle' : p[0] > c ? 'start' : 'end';
+      return '<text x="' + p[0] + '" y="' + (p[1] + (p[1] < c - 8 ? -2 : p[1] > c + 8 ? 10 : 4)) + '" text-anchor="' + anchor + '" class="ch-rl">' + esc(a.label) + ' <tspan class="ch-rv">' + Math.round(a.value) + '%</tspan></text>';
+    }).join('');
+    var dots = axes.map(function (a, i) { var p = pt(i, a.value); return '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="3.5" fill="' + col + '"><title>' + esc(a.label + ': ' + Math.round(a.value) + '%') + '</title></circle>'; }).join('');
+    return '<svg class="ch-radar" viewBox="-100 -10 ' + (S + 200) + ' ' + (S + 20) + '" role="img" aria-label="' + esc(opts.label || 'Scores by category') + ': ' +
+      esc(axes.map(function (a) { return a.label + ' ' + Math.round(a.value) + '%'; }).join(', ')) + '">' + grid +
+      '<polygon points="' + ring(target) + '" fill="none" stroke="var(--live)" stroke-dasharray="4 4" stroke-opacity=".7"/>' +
+      '<polygon points="' + shape + '" fill="' + col + '" fill-opacity=".22" stroke="' + col + '" stroke-width="2"/>' + dots + labels + '</svg>';
+  }
+
+  window.OVCharts = { radar: radar, scatter: scatter, gauge: gauge, bars: bars, donut: donut, timeline: timeline, heatmap: heatmap, attackGrid: attackGrid, worldMap: worldMap, SEV_COLOR: SEV_COLOR };
 })();

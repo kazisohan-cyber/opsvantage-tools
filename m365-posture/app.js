@@ -137,10 +137,13 @@
       '<div class="stat"><b>' + count('na') + '</b><span>not checked</span></div>' +
       '<div class="stat"><b>' + (T.users || []).filter(function (u) { return u.accountEnabled && u.userType !== 'Guest'; }).length + '</b><span>active users</span></div>' +
       '<div class="stat"><b>' + (T.p2 ? 'P2' : T.p1 ? 'P1' : 'None') + '</b><span>Entra ID licence</span></div></div>' +
+      '<div class="posture-viz">' + (window.OVCharts ? '<div class="posture-radar">' + window.OVCharts.radar(Object.keys(CATS).filter(function (k) { return S.cats[k]; }).map(function (k) {
+        return { label: ({ identity: 'Identity & MFA', admins: 'Admins', apps: 'Apps', external: 'Guests', ca: 'Cond. Access', hygiene: 'Accounts', mail: 'Email' })[k] || CATS[k], value: S.cats[k].pct };
+      }), { label: 'Security posture by category' }) + '<p class="sub" style="font-size:.74rem;text-align:center;margin:2px 0 0;max-width:none">Dashed ring: 80%, a reasonable target for each area</p></div>' : '') +
       '<div class="cats">' + Object.keys(CATS).filter(function (k) { return S.cats[k]; }).map(function (k) {
         var p = S.cats[k].pct, col = p >= 80 ? 'var(--live)' : p >= 50 ? 'var(--amber)' : '#ef4444';
         return '<div class="cat"><div class="cat-h"><span>' + CATS[k] + '</span><span class="mono">' + p + '%</span></div><div class="bar"><i style="width:' + p + '%;background:' + col + '"></i></div></div>';
-      }).join('') + '</div>' +
+      }).join('') + '</div></div>' +
       '<div class="row-actions no-print">' +
       '<button class="btn btn-primary btn-sm" type="button" data-act="print">Print / save PDF</button>' +
       '<button class="btn btn-ghost btn-sm" type="button" data-act="summary">Copy summary</button>' +
