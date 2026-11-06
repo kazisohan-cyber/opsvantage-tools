@@ -178,5 +178,28 @@
       (arcs && arcs.length ? '<span><i style="background:#ef4444;height:2px;width:14px;vertical-align:3px"></i>Impossible travel</span>' : '') + '<span>Circle size = number of sign-ins</span></div></div>';
   }
 
-  window.OVCharts = { gauge: gauge, bars: bars, donut: donut, timeline: timeline, heatmap: heatmap, attackGrid: attackGrid, worldMap: worldMap, SEV_COLOR: SEV_COLOR };
+  /**
+   * Scatter: points [{x, y, label, color}] with x 0..xMax and y 0..1 (shown as %). Optional quadrant lines.
+   * Used for CVSS (x) against exploit probability (y).
+   */
+  function scatter(points, opts) {
+    opts = opts || {};
+    var W = 640, H = 300, L = 46, B = 34, T = 12, R = 14, xMax = opts.xMax || 10;
+    var px = function (x) { return round(L + (W - L - R) * Math.max(0, Math.min(xMax, x)) / xMax); };
+    var py = function (y) { return round(T + (H - T - B) * (1 - Math.max(0, Math.min(1, y)))); };
+    var grid = '';
+    for (var gx = 0; gx <= xMax; gx += 2) grid += '<line x1="' + px(gx) + '" x2="' + px(gx) + '" y1="' + T + '" y2="' + (H - B) + '" stroke="var(--line)"/><text x="' + px(gx) + '" y="' + (H - B + 16) + '" text-anchor="middle" class="ch-ax">' + gx + '</text>';
+    [0, .25, .5, .75, 1].forEach(function (gy) { grid += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + py(gy) + '" y2="' + py(gy) + '" stroke="var(--line)"/><text x="' + (L - 6) + '" y="' + (py(gy) + 4) + '" text-anchor="end" class="ch-ax">' + Math.round(gy * 100) + '%</text>'; });
+    var q = '';
+    if (opts.qx != null) q += '<line x1="' + px(opts.qx) + '" x2="' + px(opts.qx) + '" y1="' + T + '" y2="' + (H - B) + '" stroke="var(--muted-2)" stroke-dasharray="4 4"/>';
+    if (opts.qy != null) q += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + py(opts.qy) + '" y2="' + py(opts.qy) + '" stroke="var(--muted-2)" stroke-dasharray="4 4"/>';
+    var dots = points.map(function (p) {
+      return '<circle cx="' + px(p.x) + '" cy="' + py(p.y) + '" r="' + (p.r || 6) + '" fill="' + (p.color || 'var(--pink)') + '" fill-opacity=".85" stroke="var(--bg)" stroke-width="1.5"><title>' + esc(p.label) + '</title></circle>';
+    }).join('');
+    return '<div class="ch-wrap"><svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto" role="img" aria-label="' + esc(opts.label || 'Scatter chart') + '">' + grid + q + dots +
+      '<text x="' + ((L + W - R) / 2) + '" y="' + (H - 2) + '" text-anchor="middle" class="ch-ax">' + esc(opts.xLabel || '') + '</text>' +
+      '<text x="12" y="' + ((T + H - B) / 2) + '" text-anchor="middle" class="ch-ax" transform="rotate(-90 12 ' + ((T + H - B) / 2) + ')">' + esc(opts.yLabel || '') + '</text></svg></div>';
+  }
+
+  window.OVCharts = { scatter: scatter, gauge: gauge, bars: bars, donut: donut, timeline: timeline, heatmap: heatmap, attackGrid: attackGrid, worldMap: worldMap, SEV_COLOR: SEV_COLOR };
 })();

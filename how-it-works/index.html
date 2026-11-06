@@ -57,7 +57,7 @@
     <div class="crumbs"><a href="../">Tools</a> / How it works</div>
     <h1>How the tools <em>work</em></h1>
     <p class="lead">What each tool checks, how it reaches a verdict or a score, what (if anything) leaves your browser, and where its limits are. If a result looks wrong, this page should tell you why.</p>
-    <div class="toc"><a class="btn btn-ghost btn-sm" href="#data">Your data</a><a class="btn btn-ghost btn-sm" href="#email">Email headers</a><a class="btn btn-ghost btn-sm" href="#dmarc">DMARC</a><a class="btn btn-ghost btn-sm" href="#events">Windows events</a><a class="btn btn-ghost btn-sm" href="#signins">M365 sign-ins</a><a class="btn btn-ghost btn-sm" href="#ioc">IOC Extractor</a><a class="btn btn-ghost btn-sm" href="#posture">Posture Scanner</a></div>
+    <div class="toc"><a class="btn btn-ghost btn-sm" href="#data">Your data</a><a class="btn btn-ghost btn-sm" href="#email">Email headers</a><a class="btn btn-ghost btn-sm" href="#dmarc">DMARC</a><a class="btn btn-ghost btn-sm" href="#events">Windows events</a><a class="btn btn-ghost btn-sm" href="#signins">M365 sign-ins</a><a class="btn btn-ghost btn-sm" href="#ioc">IOC Extractor</a><a class="btn btn-ghost btn-sm" href="#posture">Posture Scanner</a><a class="btn btn-ghost btn-sm" href="#links">Link Unwrapper</a><a class="btn btn-ghost btn-sm" href="#hunt">Hunting queries</a><a class="btn btn-ghost btn-sm" href="#cve">CVE Prioritizer</a><a class="btn btn-ghost btn-sm" href="#payload">Payload Decoder</a><a class="btn btn-ghost btn-sm" href="#jwt">JWT Decoder</a></div>
   </div>
 
   <h2 id="data">What leaves your browser</h2>
@@ -68,6 +68,11 @@
     <tr><td>Windows Event Triage</td><td>None.</td></tr>
     <tr><td>M365 Sign-in Review</td><td>None. Country positions for the map and travel speeds come from a table built into the page.</td></tr>
     <tr><td>SPF, DKIM &amp; DMARC Checker</td><td>DNS lookups for the domain you enter, sent from your browser to Cloudflare's resolver (1.1.1.1), with Google Public DNS as a fallback.</td></tr>
+    <tr><td>Phishing Link Unwrapper</td><td>None. Links are decoded in the page and never visited.</td></tr>
+    <tr><td>Hunting Query Generator</td><td>None.</td></tr>
+    <tr><td>Payload Decoder</td><td>None. Decoded content is shown as text and never run.</td></tr>
+    <tr><td>JWT Token Decoder</td><td>None. The token is cleared when you leave the page.</td></tr>
+    <tr><td>CVE Prioritizer</td><td>The CVE IDs you enter, sent from your browser to FIRST (EPSS scores) and CVE.org (CVSS and descriptions); the CISA KEV catalogue is downloaded from GitHub, where CISA publishes it.</td></tr>
     <tr><td>M365 Posture Scanner</td><td>Microsoft sign-in and read-only Microsoft Graph calls, straight from your browser to Microsoft, plus the same DNS lookups for each verified domain.</td></tr>
   </table>
   <p>Two things to know. First, the lookup buttons under an indicator (VirusTotal, AbuseIPDB, urlscan and so on) open that service in a new tab with the value in the address, so that service sees it. Nothing is sent until you click. Second, when you send results from one tool to another, the text is held in this tab's session storage, read once by the next tool and deleted.</p>
@@ -135,6 +140,29 @@
 
   <h2 id="ioc">IOC Extractor</h2>
   <p>Finds IPv4 and IPv6 addresses, domains, URLs, email addresses, MD5, SHA-1 and SHA-256 hashes, CVEs, file names and paths, registry keys, ASNs and Bitcoin addresses, including defanged forms such as <code>hxxp</code>, <code>[.]</code>, <code>(dot)</code> and <code>(at)</code>. Domains must end in a real top-level domain from the IANA list, and log field names, version numbers and clock times are skipped. A name like <code>invoice.pdf</code> goes to the file list rather than the domain list; write it defanged (<code>invoice[.]pdf</code>) if you mean the host.</p>
+
+  <h2 id="links">Phishing Link Unwrapper</h2>
+  <p>Each link is unwrapped one layer at a time: Microsoft Defender Safe Links (<code>url=</code>), Proofpoint URL Defense v1, v2 (<code>-XX</code> hex and <code>_</code> for slashes) and v3 (the <code>*</code> markers are filled in from the Base64 block after <code>__;</code>), Barracuda, Symantec, Google, Facebook, LinkedIn and Slack redirects, Base64-encoded URLs, and finally any query parameter that is itself a full URL. OAuth <code>redirect_uri</code> is deliberately not followed. Mimecast, Cisco and link shorteners keep the destination on their servers, so the tool says so and marks the link "be careful" instead of guessing.</p>
+  <p>The destination then goes through the same brand and lookalike checks as the IOC Triage extension: well-known brands on domains they don't own, mixed alphabets and punycode, free hosting, bare IPs, unusual ports, plain HTTP, user@host tricks, long subdomain chains and links straight to HTML, ISO or executable files.</p>
+
+  <h2 id="hunt">Hunting Query Generator</h2>
+  <p>Indicators are extracted the same way as the IOC Extractor, refanged and de-duplicated; domains inside URLs are added to the domain search and private IPs are dropped unless you include them. Queries are generated from fixed templates: Microsoft KQL uses <code>union isfuzzy=true</code> so missing tables are skipped, Splunk uses CIM field names plus a <code>tstats</code> search on the Network_Traffic data model, CrowdStrike uses LogScale <code>in()</code> on sensor events, and Elastic uses KQL on ECS fields. Field names differ between environments, so treat the queries as a strong starting point and check them against your own data.</p>
+
+  <h2 id="cve">CVE Prioritizer</h2>
+  <table class="data">
+    <tr><th>Priority</th><th>Rule</th></tr>
+    <tr><td>Patch now</td><td>On the CISA Known Exploited Vulnerabilities list</td></tr>
+    <tr><td>High</td><td>EPSS 10% or more, or CVSS 9.0+ with EPSS at least 1%</td></tr>
+    <tr><td>Medium</td><td>CVSS 7.0 or more</td></tr>
+    <tr><td>Low</td><td>Everything else, including CVEs with no score yet</td></tr>
+  </table>
+  <p>EPSS is the probability, from FIRST, that a CVE is exploited in the next 30 days. CVSS comes from the CVE.org record: the CNA score when present (CVSS 3.1 preferred, then 4.0, 3.0, 2.0), otherwise the CISA ADP enrichment. Up to 100 CVEs per run. Priority describes the vulnerability, not your exposure: an internet-facing server with a Medium CVE can still come first.</p>
+
+  <h2 id="payload">Payload Decoder</h2>
+  <p>Each pass looks for, in order: a PowerShell <code>-EncodedCommand</code> argument, a <code>FromBase64String()</code> or similar call, a whole hex string, a whole Base64 string, URL encoding, HTML entities, character codes, reversed text, and the longest Base64 run inside other text. Decoded bytes are checked for gzip, zlib and raw deflate and for UTF-16LE text, and a layer is only accepted when it produces readable text or a recognised file type. It stops after ten layers. The result is scanned for risky behaviour (download cradles, Invoke-Expression, hidden windows, AMSI tampering, Mimikatz, abused Windows tools, Defender changes, backup deletion, persistence) and for indicators. Custom ciphers such as XOR are not attempted.</p>
+
+  <h2 id="jwt">JWT Token Decoder</h2>
+  <p>The header and payload are Base64url-decoded and explained. For Microsoft Entra ID tokens it names well-known Microsoft client apps and APIs, maps the <code>wids</code> claim to directory roles, reads <code>amr</code> for MFA, and flags privileged roles, powerful scopes, public command-line clients often used in device-code phishing, lifetimes over two days and unsigned (<code>alg: none</code>) tokens. The signature is not verified. Tokens are credentials: prefer expired ones, and the page clears the box when you leave.</p>
 
   <h2 id="posture">M365 Posture Scanner</h2>
   <p>Signs in with delegated, read-only Microsoft Graph permissions and checks MFA coverage, admin roles, Conditional Access, legacy authentication, app consents, guests, stale and unlicensed accounts, licences and email domain security. Checks that need an Entra ID P1 or P2 licence the tenant doesn't have are marked <strong>not checked</strong> instead of guessed. Shared mailboxes and other unlicensed accounts are counted separately, so they don't skew the MFA figures. The permissions it asks for, and how to remove it, are listed in the <a href="../privacy/#scanner">privacy policy</a>.</p>

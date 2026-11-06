@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to decode Microsoft Safe Links and Proofpoint URLs | OpsVantage Tools</title>
+<meta name="description" content="How Microsoft Defender Safe Links and Proofpoint URL Defense (v1, v2 and v3) rewrite links, how to decode each format by hand or with a tool, and what to check on the real destination before anyone clicks.">
+<link rel="canonical" href="https://tools.opsvantage.net/guides/decode-safe-links-proofpoint/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../../assets/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="How to decode Microsoft Safe Links and Proofpoint URLs">
+<meta property="og:description" content="How Microsoft Defender Safe Links and Proofpoint URL Defense (v1, v2 and v3) rewrite links, how to decode each format by hand or with a tool, and what to check on the real destination before anyone clicks.">
+<meta property="og:url" content="https://tools.opsvantage.net/guides/decode-safe-links-proofpoint/">
+<meta property="og:image" content="https://tools.opsvantage.net/assets/media/home-og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://tools.opsvantage.net/assets/media/home-og.jpg">
+<script src="../../assets/theme.js?v=20261107"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/hub.css?v=20261107">
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "How to decode Microsoft Safe Links and Proofpoint URLs",
+    "description": "How Microsoft Defender Safe Links and Proofpoint URL Defense (v1, v2 and v3) rewrite links, how to decode each format by hand or with a tool, and what to check on the real destination before anyone clicks.",
+    "url": "https://tools.opsvantage.net/guides/decode-safe-links-proofpoint/",
+    "datePublished": "2026-11-07",
+    "dateModified": "2026-11-07",
+    "inLanguage": "en",
+    "author": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is it safe to decode a Safe Links URL?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Decoding is just reading the text of the link; nothing is requested from Microsoft or the destination. Clicking it is what you want to avoid."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Why is the same link wrapped twice?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The message passed through two products, typically Proofpoint at the mail gateway and then Defender Safe Links in Microsoft 365. Decode the outer layer first, then the inner one."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does Safe Links block the link if it's malicious?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Only if Microsoft's verdict says so at click time. A newly registered phishing domain often isn't known yet, so a clean Safe Links wrapper is no guarantee."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I decode Mimecast links without clicking?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. The destination is stored on Mimecast's side. Use your Mimecast console's URL logs or a sandbox such as urlscan.io."
+        }
+      }
+    ]
+  }
+]
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../../"><img src="../../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../../#tools">Tools</a>
+      <a class="link opt" href="../../guides/">Guides</a>
+      <a class="link opt" href="../../events/">Event IDs</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main class="wrap"><!--email_off-->
+  <article class="article">
+    <div class="tool-head">
+      <div class="crumbs"><a href="../../">Tools</a> / <a href="../">Guides</a> / Decode Safe Links and Proofpoint</div>
+      <h1>How to decode <em>Safe Links and Proofpoint</em> URLs</h1>
+      <p class="lead">How Microsoft Defender Safe Links and Proofpoint URL Defense (v1, v2 and v3) rewrite links, how to decode each format by hand or with a tool, and what to check on the real destination before anyone clicks.</p>
+      <div class="meta-line">Updated 2026-11-07 · 7 min read</div>
+    </div>
+<p>A user reports a suspicious email and you copy the link. What you get isn't the link the attacker wrote. It starts with <code>nam12.safelinks.protection.outlook.com</code> or <code>urldefense.com/v3/__</code>, runs to three hundred characters, and tells you nothing about where it goes. Sometimes it's both: Proofpoint at the edge, then Safe Links inside Microsoft 365, wrapping the same URL twice.</p>
+<p>The good news is that both formats carry the original URL inside them. You can decode Microsoft Safe Links and Proofpoint URLs without clicking, which matters, because clicking a phishing link from an analyst workstation tells the attacker someone looked.</p>
+
+<h2>How does Microsoft Safe Links rewrite a URL?</h2>
+<p>Defender for Office 365 replaces each link with a redirect through its own service. The original sits in the <code>url</code> parameter, URL-encoded:</p>
+<pre><code>https://nam12.safelinks.protection.outlook.com/?url=https%3A%2F%2Fmicrosoft-365-verify.support%2Flogin&amp;data=05%7C02%7C...&amp;sdata=...&amp;reserved=0</code></pre>
+<p>Take the value of <code>url</code> and URL-decode it once: <code>https://microsoft-365-verify.support/login</code>. The <code>data</code> parameter holds the recipient address and tenant details, so don't paste whole Safe Links URLs into public tools or tickets without trimming it.</p>
+
+<h2>How do I decode Proofpoint URL Defense links?</h2>
+<p>Proofpoint has used three formats over the years, and you'll still see all of them in older mailboxes.</p>
+<div class="table-wrap"><table>
+  <tr><th>Version</th><th>Looks like</th><th>How to decode</th></tr>
+  <tr><td>v1</td><td><code>urldefense.proofpoint.com/v1/url?u=...&amp;k=...</code></td><td>URL-decode the <code>u</code> parameter</td></tr>
+  <tr><td>v2</td><td><code>urldefense.proofpoint.com/v2/url?u=https-3A__evil.com_login&amp;d=...</code></td><td>In <code>u</code>, turn <code>-XX</code> into <code>%XX</code>, <code>_</code> into <code>/</code>, then URL-decode</td></tr>
+  <tr><td>v3</td><td><code>urldefense.com/v3/__https://evil.com/a*b__;Pw!!...</code></td><td>The URL sits between <code>__</code> markers; each <code>*</code> is a character stored in the Base64 block after <code>__;</code></td></tr>
+</table></div>
+<p>v2 trips people up because a literal hyphen in the original is written as <code>-2D</code>. If you replace every hyphen with a percent sign you'll break domains like <code>paypa1-account.com</code>. Only <code>-</code> followed by two hex digits is an encoded byte.</p>
+<p>v3 is the clever one. Characters that would break the URL, such as <code>?</code>, <code>=</code> and <code>&amp;</code>, are replaced by <code>*</code>, and the real characters are Base64url-encoded after <code>__;</code>, up to the <code>!!</code>. A run like <code>**A</code> means "the next two characters". So <code>__https://example.com/a*b*c__;Pz0!!</code> decodes to <code>https://example.com/a?b=c</code>, because <code>Pz0</code> is Base64 for <code>?=</code>.</p>
+
+<h2>What about Mimecast, Cisco and link shorteners?</h2>
+<p>These can't be decoded offline. Mimecast's <code>protect-*.mimecast.com/s/...</code> links and Cisco Secure Email's rewritten links carry a token that only their servers can resolve; shorteners like bit.ly are the same. The safe move is to let a sandbox follow them: submit the link to urlscan.io or your own detonation service and read the result there. Don't expand them from your own browser.</p>
+
+<h2>What should I check once I have the real URL?</h2>
+<ul>
+  <li><strong>The registered domain, not the brand words.</strong> <code>microsoft-365-verify.support</code> is owned by whoever registered <code>.support</code>, not Microsoft. Read the domain right to left.</li>
+  <li><strong>Punycode.</strong> A host starting <code>xn--</code> displays in another alphabet. <code>xn--micrsoft-qbh.com</code> shows as "micrоsoft.com" with a Cyrillic о.</li>
+  <li><strong>Free hosting and file links.</strong> <code>pages.dev</code>, <code>web.app</code>, <code>blob.core.windows.net</code> and links that end in <code>.html</code> or <code>.svg</code> are common homes for credential-harvesting pages.</li>
+  <li><strong>The @ trick.</strong> In <code>https://login.microsoftonline.com@evil.example/</code> everything before the @ is ignored; the browser goes to <code>evil.example</code>.</li>
+  <li><strong>Another redirect.</strong> A parameter like <code>?url=</code> or <code>?redirect=</code> on a legitimate site can bounce users onward. Keep unwrapping until there's nothing left.</li>
+</ul>
+<p>Once you know the destination, the <a href="../phishing-triage-checklist/">phishing triage checklist</a> covers what to do with the message, and <a href="../investigate-suspicious-ip/">investigating a suspicious IP</a> covers the hosting behind it.</p>
+
+<h2>FAQ</h2>
+<h3>Is it safe to decode a Safe Links URL?</h3>
+<p>Yes. Decoding is just reading the text of the link; nothing is requested from Microsoft or the destination. Clicking it is what you want to avoid.</p>
+<h3>Why is the same link wrapped twice?</h3>
+<p>The message passed through two products, typically Proofpoint at the mail gateway and then Defender Safe Links in Microsoft 365. Decode the outer layer first, then the inner one.</p>
+<h3>Does Safe Links block the link if it's malicious?</h3>
+<p>Only if Microsoft's verdict says so at click time. A newly registered phishing domain often isn't known yet, so a clean Safe Links wrapper is no guarantee.</p>
+<h3>Can I decode Mimecast links without clicking?</h3>
+<p>No. The destination is stored on Mimecast's side. Use your Mimecast console's URL logs or a sandbox such as urlscan.io.</p>
+    <div class="next">
+      <div><b>Decode a wrapped link in one paste</b><p>The Phishing Link Unwrapper peels Safe Links, Proofpoint and redirect chains off a URL offline and checks the real destination for lookalike brands and punycode.</p></div>
+      <a class="btn btn-primary" href="../../link-unwrapper/">Open Link Unwrapper</a>
+    </div>
+    <div class="next">
+      <div><b>Unwrap links where you read them</b><p>IOC Triage, our free browser extension, unwraps links in webmail and gives the real destination a verdict from 15 threat-intel sources.</p></div>
+      <a class="btn btn-ghost" href="https://chromewebstore.google.com/detail/dncgneacahomieionjkaofmfnojlkfmc?utm_source=tools.opsvantage.net&amp;utm_medium=guide&amp;utm_campaign=decode-safe-links-proofpoint">Add IOC Triage to Chrome</a>
+    </div>
+  </article>
+<!--/email_off--></main>
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../../">All tools</a> · <a href="../../guides/">Guides</a> · <a href="../../privacy/">Privacy &amp; terms</a> · <a href="../../how-it-works/">How it works</a> · <a href="../../changelog/">Changelog</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../../assets/hub.js?v=20261107"></script>
+</body>
+</html>

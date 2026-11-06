@@ -59,4 +59,13 @@
   <url><loc>https://tools.opsvantage.net/guides/consent-phishing-oauth-apps/</loc><lastmod>2026-11-06</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://tools.opsvantage.net/how-it-works/</loc><lastmod>2026-11-06</lastmod></url>
   <url><loc>https://tools.opsvantage.net/changelog/</loc><lastmod>2026-11-06</lastmod></url>
+  <url><loc>https://tools.opsvantage.net/link-unwrapper/</loc><lastmod>2026-11-07</lastmod></url>
+  <url><loc>https://tools.opsvantage.net/hunt-queries/</loc><lastmod>2026-11-07</lastmod></url>
+  <url><loc>https://tools.opsvantage.net/cve-prioritizer/</loc><lastmod>2026-11-07</lastmod></url>
+  <url><loc>https://tools.opsvantage.net/payload-decoder/</loc><lastmod>2026-11-07</lastmod></url>
+  <url><loc>https://tools.opsvantage.net/jwt-decoder/</loc><lastmod>2026-11-07</lastmod></url>
+  <url><loc>https://tools.opsvantage.net/guides/decode-safe-links-proofpoint/</loc><lastmod>2026-11-06</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://tools.opsvantage.net/guides/ioc-hunting-queries-kql-splunk/</loc><lastmod>2026-11-06</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://tools.opsvantage.net/guides/prioritize-cves-kev-epss/</loc><lastmod>2026-11-06</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://tools.opsvantage.net/guides/decode-entra-access-token/</loc><lastmod>2026-11-06</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
 </urlset>

@@ -360,3 +360,10 @@ main p a:not(.btn),main li a:not(.btn),.article a:not(.btn),.next-steps a{text-d
 .tour-b{display:flex;justify-content:flex-end;gap:8px}
 .tour-on{position:relative;z-index:55;box-shadow:0 0 0 3px var(--pink-br),0 0 0 9px var(--pink-soft)!important;border-radius:10px}
 @media print{.tour{display:none!important}.tour-on{box-shadow:none!important}}
+
+/* query blocks (hunting queries, decoders) */
+.q-block{margin:0 0 12px}
+.q-h{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;font-size:.84rem}
+pre.q{white-space:pre-wrap;word-break:break-word;font:12.5px/1.55 var(--mono);background:var(--surface);border:1px solid var(--line-2);border-radius:9px;padding:10px 12px;max-height:340px;overflow:auto;color:var(--text)}
+.opts select{background:var(--bg-soft);color:var(--text);border:1px solid var(--line-2);border-radius:7px;padding:3px 6px;font:inherit}
+.ch-ax{font:10px var(--mono);fill:var(--muted)}

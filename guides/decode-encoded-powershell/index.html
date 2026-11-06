@@ -31,7 +31,7 @@
     "description": "Why attackers use powershell -enc, how to decode the Base64 safely (it's UTF-16LE), how to unpack compressed layers, and what to look for once you can read it.",
     "url": "https://tools.opsvantage.net/guides/decode-encoded-powershell/",
     "datePublished": "2026-11-04",
-    "dateModified": "2026-11-04",
+    "dateModified": "2026-11-07",
     "inLanguage": "en",
     "author": {
       "@type": "Organization",
@@ -98,7 +98,7 @@
       <div class="crumbs"><a href="../../">Tools</a> / <a href="../">Guides</a> / Decode encoded PowerShell</div>
       <h1>How to decode <em>encoded PowerShell</em> commands</h1>
       <p class="lead">Why attackers use powershell -enc, how to decode the Base64 safely (it's UTF-16LE), how to unpack compressed layers, and what to look for once you can read it.</p>
-      <div class="meta-line">Updated 2026-11-04 · 8 min read</div>
+      <div class="meta-line">Updated 2026-11-07 · 8 min read</div>
     </div>
 <p>You find a process creation event with a command line like <code>powershell.exe -nop -w hidden -enc SQBFAFgAIAAoAE4AZQB3AC0A...</code> and a few hundred more characters of what looks like noise. That noise is the actual script, Base64-encoded. Attackers use <strong>encoded PowerShell</strong> because it hides the script from a quick glance, survives being passed through other tools without quoting problems, and slips past simple keyword alerts. Decoding it takes a minute once you know the one detail that trips most people up.</p>
 
@@ -165,8 +165,8 @@ $z  = New-Object IO.Compression.GzipStream($ms, [IO.Compression.CompressionMode]
 <h3>How do I detect encoded PowerShell automatically?</h3>
 <p>Turn on command-line logging for Event ID 4688 or deploy Sysmon, enable script block logging (4104), and alert on <code>powershell</code> with <code>-e</code>, <code>-en</code> or <code>-enc</code> followed by a long Base64 string, especially from Office or browser parents.</p>
     <div class="next">
-      <div><b>Find encoded commands in your logs</b><p>Windows Event Triage reads exported events in your browser and flags encoded PowerShell, download cradles, AMSI bypasses and other execution patterns.</p></div>
-      <a class="btn btn-primary" href="../../event-triage/">Open Event Triage</a>
+      <div><b>Decode it layer by layer, safely</b><p>The Payload Decoder peels -EncodedCommand, Base64, gzip and other layers in your browser, then lists the indicators and what the script would do. Nothing runs.</p></div>
+      <a class="btn btn-primary" href="../../payload-decoder/">Open Payload Decoder</a>
     </div>
     <div class="next">
       <div><b>Check what the script downloads</b><p>Once decoded, encoded PowerShell usually points at a URL, domain or IP. IOC Triage, our free browser extension, gives a verdict for each from 15 threat-intel sources with a right-click.</p></div>

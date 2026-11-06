@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phishing Link Unwrapper: Decode Safe Links, Proofpoint &amp; Redirects | OpsVantage Tools</title>
+<meta name="description" content="Free phishing link checker: unwrap Microsoft Safe Links, Proofpoint URL Defense, Google and other redirects offline, then check the real destination for brand lookalikes, punycode and other phishing tricks. Nothing is visited.">
+<link rel="canonical" href="https://tools.opsvantage.net/link-unwrapper/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../assets/logo.png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Phishing Link Unwrapper: see where a link really goes">
+<meta property="og:description" content="Unwrap Safe Links, Proofpoint and redirect chains offline and check the real destination for phishing tricks. Nothing is visited.">
+<meta property="og:url" content="https://tools.opsvantage.net/link-unwrapper/">
+<meta property="og:image" content="https://tools.opsvantage.net/assets/media/link-unwrapper-og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://tools.opsvantage.net/assets/media/link-unwrapper-og.jpg">
+<script src="../assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/hub.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Phishing Link Unwrapper",
+  "url": "https://tools.opsvantage.net/link-unwrapper/",
+  "applicationCategory": "SecurityApplication",
+  "operatingSystem": "Any (web browser)",
+  "isAccessibleForFree": true,
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "description": "Unwrap Safe Links, Proofpoint and redirect chains offline and check the real destination for phishing tricks. Nothing is visited.",
+  "publisher": {
+    "@type": "Organization",
+    "name": "OpsVantage",
+    "url": "https://opsvantage.net/"
+  }
+}
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../"><img src="../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../#tools">All tools</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="tool-head">
+    <div class="crumbs"><a href="../">Tools</a> / Phishing Link Unwrapper</div>
+    <h1>Phishing Link <em>Unwrapper</em></h1>
+    <p class="lead">Paste a link from a reported email. Safe Links, Proofpoint URL Defense, Barracuda, Google and other redirect wrappers are peeled off one by one, then the real destination is checked for lookalike brands, punycode, shorteners, bare IPs and credential tricks.</p>
+    <span class="privacy-note">● Runs in your browser. Links are decoded, never visited, and nothing you paste is sent anywhere.</span>
+  </div>
+
+  <div class="workspace">
+    <section class="panel" aria-labelledby="in-h">
+      <div class="panel-h">
+        <h2 id="in-h">Links</h2>
+        <div class="row-actions" style="margin:0">
+          <button class="btn btn-ghost btn-sm" type="button" id="sample">Load sample</button>
+          <button class="btn btn-ghost btn-sm" type="button" id="clear">Clear</button>
+        </div>
+      </div>
+      <label for="input" style="position:absolute;left:-9999px">Links to unwrap</label>
+      <textarea class="input" id="input" spellcheck="false" placeholder="Paste one or more links, defanged or not.&#10;https://nam12.safelinks.protection.outlook.com/?url=...&#10;https://urldefense.com/v3/__https://..."></textarea>
+      <div class="row-actions">
+        <button class="btn btn-primary btn-sm" type="button" id="analyze">Unwrap</button>
+        <span class="sub" style="margin:0;font-size:.8rem">Ctrl+Enter</span>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="out-h" aria-live="polite">
+      <div class="panel-h">
+        <h2 id="out-h">Real destinations</h2>
+        <button class="btn btn-ghost btn-sm" type="button" id="note" disabled>Copy ticket note</button>
+      </div>
+      <div id="out"><p class="empty">Paste one or more links and press Unwrap.</p></div>
+    </section>
+  </div>
+
+  <section class="demo-block">
+    <div class="panel-h"><h2>See it in action</h2><span class="sub" style="margin:0;font-size:.82rem">A short demo with sample data, no sound</span></div>
+    <video class="demo-video" muted loop playsinline preload="none" width="960" height="540" poster="../assets/media/link-unwrapper-demo.jpg" data-src="../assets/media/link-unwrapper-demo.mp4" aria-label="Demo of the Phishing Link Unwrapper: loading sample data and reading the results"></video>
+  </section>
+
+  <section class="howto">
+    <h2>What it unwraps and checks</h2>
+    <div class="cols">
+      <div><h3>Wrappers</h3><p>Microsoft Defender Safe Links, Proofpoint URL Defense v1, v2 and v3 (including its encoded characters), Barracuda, Symantec, Google, Facebook, LinkedIn and Slack redirects, Base64-encoded URLs, and any parameter that is itself a full URL. Mimecast, Cisco and shorteners keep the target on their servers, so it says so instead of guessing.</p></div>
+      <div><h3>Destination checks</h3><p>Lookalikes of well-known brands, punycode hosts and how they really display, user@host tricks, bare IP addresses, unusual ports, plain HTTP, deep subdomain chains, links straight to HTML or ISO files, and free hosting often used for phishing pages.</p></div>
+      <div><h3>Safe by design</h3><p>No request is made to any link, so nothing on the other end learns you looked. When you need to see the page itself, the urlscan button opens a sandboxed scan in a new tab.</p></div>
+    </div>
+    <p class="related-guides sub" style="margin-top:22px">Guides: <a href="../guides/decode-safe-links-proofpoint/" style="color:var(--link)">How to decode Safe Links and Proofpoint URLs</a> · <a href="../guides/phishing-triage-checklist/" style="color:var(--link)">Phishing email triage checklist</a></p>
+    <div class="next">
+      <div><b>Check links where you read them</b><p>IOC Triage, our free browser extension, unwraps links in webmail and gives each destination a verdict from 15 threat-intel sources.</p></div>
+      <a class="btn btn-ghost" href="https://chromewebstore.google.com/detail/dncgneacahomieionjkaofmfnojlkfmc?utm_source=tools.opsvantage.net&amp;utm_medium=tool&amp;utm_campaign=link-unwrapper">Add to Chrome</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../">All tools</a> · <a href="../privacy/">Privacy &amp; terms</a> · <a href="../how-it-works/">How it works</a> · <a href="../changelog/">Changelog</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../assets/hub.js"></script>
+<script src="../assets/lib/public-suffixes.js"></script>
+<script src="../assets/lib/analyzer.js"></script>
+<script src="../assets/lib/ioc.js"></script>
+<script src="../assets/charts.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

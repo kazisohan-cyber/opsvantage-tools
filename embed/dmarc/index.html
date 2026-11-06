@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SPF, DKIM &amp; DMARC Checker (embed) | OpsVantage Tools</title>
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://tools.opsvantage.net/dmarc-checker/">
+<script src="../../assets/theme.js"></script>
+<link rel="stylesheet" href="../../assets/hub.css">
+<style>
+  body{background:var(--surface);padding:14px}
+  .e-wrap{max-width:640px;margin:0 auto}
+  .e-h{font-family:var(--display);font-size:1rem;margin-bottom:8px}
+  .e-form{display:flex;gap:8px}
+  .e-form input{flex:1;min-width:0}
+  .e-top{display:flex;gap:14px;align-items:center;margin-top:14px}
+  .e-d{color:var(--muted);font-size:.85rem}
+  .e-more{margin-top:10px;font-size:.84rem}.e-more a{color:var(--link);text-decoration:underline}
+  .e-foot{margin-top:12px;font-size:.72rem;color:var(--muted)}.e-foot a{color:var(--muted);text-decoration:underline}
+  .empty{padding:16px 4px}
+</style>
+</head>
+<body>
+<main class="e-wrap" id="main">
+  <div class="e-h">Can this domain be spoofed?</div>
+  <form class="e-form" id="f" autocomplete="off">
+    <label for="d" style="position:absolute;left:-9999px">Domain</label>
+    <input class="input" id="d" placeholder="example.com" spellcheck="false" inputmode="url">
+    <button class="btn btn-primary btn-sm" id="go" type="submit">Check</button>
+  </form>
+  <div id="res" aria-live="polite"><p class="empty">Enter a domain to get an SPF, DKIM and DMARC grade.</p></div>
+  <p class="e-foot">Checked in your browser through public DNS. Free tool by <a href="https://tools.opsvantage.net/" target="_blank" rel="noopener">OpsVantage Tools</a>.</p>
+</main>
+<script src="../../assets/lib/mailauth.js"></script>
+<script src="../../assets/charts.js"></script>
+<script src="embed.js"></script>
+</body>
+</html>

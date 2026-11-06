@@ -44,7 +44,7 @@
   <div class="tool-head">
     <div class="crumbs"><a href="../">Tools</a> / Privacy &amp; terms</div>
     <h1>Privacy policy <em>&amp; terms</em></h1>
-    <p class="lead">Last updated 6 November 2026. Plain language first: the tools process your data in your browser, OpsVantage does not run a server that receives it, and we do not sell or share anything.</p>
+    <p class="lead">Last updated 7 November 2026. Plain language first: the tools process your data in your browser, OpsVantage does not run a server that receives it, and we do not sell or share anything.</p>
     <div class="toc"><a class="btn btn-ghost btn-sm" href="#privacy">Privacy policy</a><a class="btn btn-ghost btn-sm" href="#scanner">M365 Posture Scanner</a><a class="btn btn-ghost btn-sm" href="#terms">Terms of use</a></div>
   </div>
 
@@ -52,11 +52,12 @@
   <p>This policy covers the website <strong>tools.opsvantage.net</strong> and the tools on it ("the tools"), provided by OpsVantage ("we"). The IOC Triage browser extension has its <a href="https://github.com/kazisohan-cyber/soclens/blob/main/PRIVACY.md" style="color:var(--pink)">own privacy policy</a>.</p>
 
   <h3>What the tools do with what you paste or upload</h3>
-  <p>The IOC Extractor, Email Header Analyzer, Windows Event Triage and M365 Sign-in Review run entirely in your browser. Text you paste and files you open are processed on your device and are <strong>not sent to us or anyone else</strong>. Closing or reloading the page discards them.</p>
+  <p>The IOC Extractor, Email Header Analyzer, Windows Event Triage, M365 Sign-in Review, Phishing Link Unwrapper, Hunting Query Generator, Payload Decoder and JWT Token Decoder run entirely in your browser. Text you paste and files you open are processed on your device and are <strong>not sent to us or anyone else</strong>. Closing or reloading the page discards them.</p>
 
   <h3>Tools that make network requests</h3>
   <ul>
     <li><strong>SPF, DKIM &amp; DMARC Checker</strong>: the domain names you check are looked up directly from your browser through Cloudflare's public DNS resolver (1.1.1.1), falling back to Google Public DNS. Those providers receive the DNS queries under their own privacy policies. We do not.</li>
+    <li><strong>CVE Prioritizer</strong>: the CVE IDs you enter are looked up directly from your browser at FIRST (api.first.org, for EPSS scores) and CVE.org (cveawg.mitre.org), and the CISA KEV catalogue is downloaded from GitHub (raw.githubusercontent.com). Only CVE IDs are sent, under those services' own privacy policies.</li>
     <li><strong>M365 Posture Scanner</strong>: talks directly to Microsoft. See the section below.</li>
     <li><strong>Lookup links</strong>: the buttons under an indicator (VirusTotal, AbuseIPDB, urlscan and others) open that service in a new tab with the indicator in the address. That service receives it under its own privacy policy. Nothing is sent unless you click one.</li>
     <li><strong>Demo videos</strong> are files on this site; they load only when you scroll to them.</li>

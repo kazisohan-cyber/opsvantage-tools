@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to read a Microsoft Entra ID access token (JWT) during an investigation | OpsVantage Tools</title>
+<meta name="description" content="What the claims in a Microsoft Entra ID access token mean for an investigation: tenant, client app, MFA in amr, admin roles in wids, scopes, the sign-in IP and lifetime, plus how to respond when a token has been stolen.">
+<link rel="canonical" href="https://tools.opsvantage.net/guides/decode-entra-access-token/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../../assets/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="How to read a Microsoft Entra ID access token (JWT) during an investigation">
+<meta property="og:description" content="What the claims in a Microsoft Entra ID access token mean for an investigation: tenant, client app, MFA in amr, admin roles in wids, scopes, the sign-in IP and lifetime, plus how to respond when a token has been stolen.">
+<meta property="og:url" content="https://tools.opsvantage.net/guides/decode-entra-access-token/">
+<meta property="og:image" content="https://tools.opsvantage.net/assets/media/home-og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://tools.opsvantage.net/assets/media/home-og.jpg">
+<script src="../../assets/theme.js?v=20261107"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/hub.css?v=20261107">
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "How to read a Microsoft Entra ID access token (JWT) during an investigation",
+    "description": "What the claims in a Microsoft Entra ID access token mean for an investigation: tenant, client app, MFA in amr, admin roles in wids, scopes, the sign-in IP and lifetime, plus how to respond when a token has been stolen.",
+    "url": "https://tools.opsvantage.net/guides/decode-entra-access-token/",
+    "datePublished": "2026-11-07",
+    "dateModified": "2026-11-07",
+    "inLanguage": "en",
+    "author": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Can I tell if a token is genuine just by decoding it?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. Decoding reads the claims; only verifying the signature against Microsoft's published keys proves Entra issued it. For investigation, the claims are what you need, but don't trust a token's claims for access decisions without verification."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What's the difference between v1 and v2 tokens?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The ver claim says which. v1 tokens use appid and upn, v2 tokens use azp and preferred_username. The API being called decides which version it receives."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does revoking sessions kill the access token immediately?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Not always. Revocation stops refresh tokens. The current access token stays valid until it expires, typically within 90 minutes, unless the resource supports Continuous Access Evaluation."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Why does the token show MFA when the account was phished?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Adversary-in-the-middle kits sit between the user and Microsoft and relay the MFA prompt, so the token correctly records that MFA happened. Phishing-resistant methods such as FIDO2 keys stop this."
+        }
+      }
+    ]
+  }
+]
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../../"><img src="../../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../../#tools">Tools</a>
+      <a class="link opt" href="../../guides/">Guides</a>
+      <a class="link opt" href="../../events/">Event IDs</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main class="wrap"><!--email_off-->
+  <article class="article">
+    <div class="tool-head">
+      <div class="crumbs"><a href="../../">Tools</a> / <a href="../">Guides</a> / Read an Entra access token</div>
+      <h1>How to read a Microsoft Entra <em>access token</em></h1>
+      <p class="lead">What the claims in a Microsoft Entra ID access token mean for an investigation: tenant, client app, MFA in amr, admin roles in wids, scopes, the sign-in IP and lifetime, plus how to respond when a token has been stolen.</p>
+      <div class="meta-line">Updated 2026-11-07 · 8 min read</div>
+    </div>
+<p>Tokens turn up in incidents more often than they used to. An adversary-in-the-middle phishing kit captures one, an infostealer log on a paste site contains a dozen, or a developer leaves one in a support ticket. The first questions are always the same: whose is it, what can it do, and is it still valid?</p>
+<p>A Microsoft Entra ID access token answers most of that by itself. It's a JSON Web Token: three Base64url-encoded parts separated by dots, and the middle part is a readable list of claims. This guide covers how to read a Microsoft Entra access token and which claims matter for an investigation.</p>
+<div class="callout"><p><strong>Treat a live token like a password.</strong> Anyone holding it can call the API it was issued for until it expires. Decode tokens in a tool that runs locally, prefer expired ones, and don't paste them into tickets or chat.</p></div>
+
+<h2>Which claims identify the user and tenant?</h2>
+<div class="table-wrap"><table>
+  <tr><th>Claim</th><th>What it tells you</th></tr>
+  <tr><td><code>upn</code>, <code>unique_name</code>, <code>preferred_username</code></td><td>The signed-in account</td></tr>
+  <tr><td><code>oid</code></td><td>The user's object ID, which doesn't change if the UPN does. Search sign-in logs with it.</td></tr>
+  <tr><td><code>tid</code></td><td>The tenant ID. A guest's token carries the resource tenant, not their home one.</td></tr>
+  <tr><td><code>iss</code></td><td>The issuer, which also contains the tenant ID</td></tr>
+  <tr><td><code>acct</code></td><td>0 for a member, 1 for a guest</td></tr>
+</table></div>
+
+<h2>Which app asked for the token, and for what?</h2>
+<p><code>appid</code> (v1 tokens) or <code>azp</code> (v2) is the client application, and <code>aud</code> is the API the token is for. Microsoft's own apps have fixed IDs: <code>04b07795-8ddb-461a-bbee-02f9e1bf7b46</code> is the Azure CLI, <code>1950a258-227b-4e31-a9cf-717495945fc2</code> is Azure PowerShell, <code>d3590ed6-52b3-4102-aeff-aad2292ab01c</code> is Microsoft Office, and an <code>aud</code> of <code>00000003-0000-0000-c000-000000000000</code> means Microsoft Graph.</p>
+<p>Public first-party clients like the Azure CLI deserve a second look. They need no app registration and work with device-code sign-in, which is why device-code phishing campaigns favour them. An ordinary finance user with an Azure CLI token for Graph is unusual.</p>
+
+<h2>Was MFA used?</h2>
+<p>The <code>amr</code> claim lists the authentication methods. <code>["pwd"]</code> alone means password only. <code>mfa</code> means multi-factor was satisfied; <code>ngcmfa</code> (Windows Hello for Business) and <code>fido</code> count too. Note that <code>mfa</code> appears whether the user approved a push or used a phishing-resistant method, so it can't tell you whether an adversary-in-the-middle kit relayed the MFA. For that, compare the sign-in log's authentication details and IP.</p>
+
+<h2>What can the token do?</h2>
+<ul>
+  <li><strong><code>scp</code></strong> lists delegated permissions: what the app can do as the user. <code>Mail.ReadWrite</code>, <code>Mail.Send</code>, <code>Files.ReadWrite.All</code> and <code>Directory.AccessAsUser.All</code> are the ones that turn a stolen token into a business email compromise.</li>
+  <li><strong><code>roles</code></strong> on an app-only token lists application permissions, which apply to the whole tenant with no user involved.</li>
+  <li><strong><code>wids</code></strong> lists the user's directory roles as template IDs. <code>62e90394-69f5-4237-9190-012177145e10</code> is Global Administrator. <code>b79fbf4d-3ef9-4689-8143-76b194e85509</code> appears for every user and isn't a privilege.</li>
+  <li><strong><code>offline_access</code></strong> in the scopes means a refresh token was issued as well. That's the bigger prize: it can mint new access tokens for days.</li>
+</ul>
+
+<h2>When and where was it issued?</h2>
+<p><code>iat</code>, <code>nbf</code> and <code>exp</code> are Unix timestamps. Entra access tokens usually live 60 to 90 minutes. <code>ipaddr</code> is the IP that signed in, which is the fastest pivot: check it against the user's normal locations and threat intel, then find the matching sign-in with the <code>uti</code> claim, which identifies the token in Entra sign-in logs.</p>
+
+<h2>What should I do if a token was stolen?</h2>
+<ol>
+  <li><strong>Revoke the user's sessions</strong> (<code>Revoke-MgUserSignInSession</code> or "Revoke sessions" in Entra). This invalidates refresh tokens. Existing access tokens keep working until they expire unless Continuous Access Evaluation applies.</li>
+  <li><strong>Reset the password and review MFA methods</strong>; attackers often register their own authenticator during the window.</li>
+  <li><strong>Search for what the token was used for</strong>: mailbox access, new inbox rules, app consents and file downloads from the token's IP. The <a href="../m365-inbox-rules-forwarding/">inbox rules guide</a> and <a href="../consent-phishing-oauth-apps/">consent phishing guide</a> cover the common follow-ons.</li>
+  <li><strong>Close the door</strong>: block device-code flow if unused, require compliant devices or phishing-resistant MFA for admins, and consider token protection policies.</li>
+</ol>
+
+<h2>FAQ</h2>
+<h3>Can I tell if a token is genuine just by decoding it?</h3>
+<p>No. Decoding reads the claims; only verifying the signature against Microsoft's published keys proves Entra issued it. For investigation, the claims are what you need, but don't trust a token's claims for access decisions without verification.</p>
+<h3>What's the difference between v1 and v2 tokens?</h3>
+<p>The <code>ver</code> claim says which. v1 tokens use <code>appid</code> and <code>upn</code>, v2 tokens use <code>azp</code> and <code>preferred_username</code>. The API being called decides which version it receives.</p>
+<h3>Does revoking sessions kill the access token immediately?</h3>
+<p>Not always. Revocation stops refresh tokens. The current access token stays valid until it expires, typically within 90 minutes, unless the resource supports Continuous Access Evaluation.</p>
+<h3>Why does the token show MFA when the account was phished?</h3>
+<p>Adversary-in-the-middle kits sit between the user and Microsoft and relay the MFA prompt, so the token correctly records that MFA happened. Phishing-resistant methods such as FIDO2 keys stop this.</p>
+    <div class="next">
+      <div><b>Decode a token without sending it anywhere</b><p>The JWT Token Decoder explains every claim in your browser and flags missing MFA, privileged roles, risky scopes and abused client apps.</p></div>
+      <a class="btn btn-primary" href="../../jwt-decoder/">Open JWT Decoder</a>
+    </div>
+    <div class="next">
+      <div><b>Check the sign-in IP</b><p>IOC Triage, our free browser extension, gives the IP from a token or sign-in log a verdict from 15 threat-intel sources with a right-click.</p></div>
+      <a class="btn btn-ghost" href="https://chromewebstore.google.com/detail/dncgneacahomieionjkaofmfnojlkfmc?utm_source=tools.opsvantage.net&amp;utm_medium=guide&amp;utm_campaign=decode-entra-access-token">Add IOC Triage to Chrome</a>
+    </div>
+  </article>
+<!--/email_off--></main>
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../../">All tools</a> · <a href="../../guides/">Guides</a> · <a href="../../privacy/">Privacy &amp; terms</a> · <a href="../../how-it-works/">How it works</a> · <a href="../../changelog/">Changelog</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../../assets/hub.js?v=20261107"></script>
+</body>
+</html>

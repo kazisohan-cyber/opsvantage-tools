@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to hunt for IOCs in Microsoft Sentinel, Defender XDR and Splunk | OpsVantage Tools</title>
+<meta name="description" content="Practical KQL and SPL for hunting IP addresses, domains, URLs and file hashes from a threat report across Microsoft Sentinel, Defender XDR and Splunk, which tables to search, and how to handle long indicator lists.">
+<link rel="canonical" href="https://tools.opsvantage.net/guides/ioc-hunting-queries-kql-splunk/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../../assets/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="How to hunt for IOCs in Microsoft Sentinel, Defender XDR and Splunk">
+<meta property="og:description" content="Practical KQL and SPL for hunting IP addresses, domains, URLs and file hashes from a threat report across Microsoft Sentinel, Defender XDR and Splunk, which tables to search, and how to handle long indicator lists.">
+<meta property="og:url" content="https://tools.opsvantage.net/guides/ioc-hunting-queries-kql-splunk/">
+<meta property="og:image" content="https://tools.opsvantage.net/assets/media/home-og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://tools.opsvantage.net/assets/media/home-og.jpg">
+<script src="../../assets/theme.js?v=20261107"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/hub.css?v=20261107">
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "How to hunt for IOCs in Microsoft Sentinel, Defender XDR and Splunk",
+    "description": "Practical KQL and SPL for hunting IP addresses, domains, URLs and file hashes from a threat report across Microsoft Sentinel, Defender XDR and Splunk, which tables to search, and how to handle long indicator lists.",
+    "url": "https://tools.opsvantage.net/guides/ioc-hunting-queries-kql-splunk/",
+    "datePublished": "2026-11-07",
+    "dateModified": "2026-11-07",
+    "inLanguage": "en",
+    "author": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Why does my KQL query fail with \"failed to resolve table\"?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The table doesn't exist in that workspace, for example SigninLogs without the Entra ID connector. Use union isfuzzy=true so missing tables are skipped."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Should I use has or contains for domains?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Use has or has_any. They use the term index and are much faster than contains, and they match whole terms, which is what you want for domains."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does Defender XDR advanced hunting keep data as long as Sentinel?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. Advanced hunting keeps 30 days. For older data, query the same tables in Sentinel if you stream Defender data there."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I turn a hunting query into a detection?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Once the indicator list is in a watchlist or lookup, save the query as a scheduled analytics rule or saved search, with a shorter window such as one hour."
+        }
+      }
+    ]
+  }
+]
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../../"><img src="../../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../../#tools">Tools</a>
+      <a class="link opt" href="../../guides/">Guides</a>
+      <a class="link opt" href="../../events/">Event IDs</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main class="wrap"><!--email_off-->
+  <article class="article">
+    <div class="tool-head">
+      <div class="crumbs"><a href="../../">Tools</a> / <a href="../">Guides</a> / IOC hunting queries</div>
+      <h1>How to hunt for <em>IOCs</em> in Sentinel, Defender and Splunk</h1>
+      <p class="lead">Practical KQL and SPL for hunting IP addresses, domains, URLs and file hashes from a threat report across Microsoft Sentinel, Defender XDR and Splunk, which tables to search, and how to handle long indicator lists.</p>
+      <div class="meta-line">Updated 2026-11-07 · 8 min read</div>
+    </div>
+<p>A threat report lands with forty indicators: a handful of C2 IPs, some domains, a few SHA-256 hashes. Someone asks the obvious question: have we seen any of these? Answering it well means searching the right tables for each type of indicator, over a sensible time window, without writing forty separate queries.</p>
+<p>This guide covers how to hunt for IOCs in Microsoft Sentinel, Defender XDR and Splunk: where each indicator type shows up, the query patterns that scale, and the mistakes that produce false confidence.</p>
+
+<h2>Which tables should I search for each indicator type?</h2>
+<div class="table-wrap"><table>
+  <tr><th>Indicator</th><th>Defender XDR / Sentinel</th><th>Splunk (CIM)</th></tr>
+  <tr><td>IP address</td><td><code>DeviceNetworkEvents</code> (RemoteIP), <code>CommonSecurityLog</code> (firewalls), <code>SigninLogs</code> (IPAddress)</td><td>Network_Traffic data model, <code>src_ip</code> / <code>dest_ip</code></td></tr>
+  <tr><td>Domain</td><td><code>DeviceNetworkEvents</code> (RemoteUrl), <code>DeviceEvents</code> DNS queries, <code>EmailUrlInfo</code>, <code>UrlClickEvents</code>, <code>DnsEvents</code></td><td>Network_Resolution (<code>query</code>), Web (<code>url</code>)</td></tr>
+  <tr><td>File hash</td><td><code>DeviceFileEvents</code>, <code>DeviceProcessEvents</code>, <code>EmailAttachmentInfo</code></td><td>Endpoint data model, <code>file_hash</code></td></tr>
+  <tr><td>Email sender</td><td><code>EmailEvents</code> (SenderFromAddress)</td><td>Email data model, <code>src_user</code></td></tr>
+</table></div>
+<p>The most common gap is DNS. A blocked connection may never appear in network logs, but the DNS lookup that preceded it usually does. Always search DNS for domains.</p>
+
+<h2>What does a good KQL hunting query look like?</h2>
+<p>Put the indicators in a <code>dynamic</code> array once and search several tables with <code>union</code>. <code>isfuzzy=true</code> means a table your workspace doesn't have is skipped instead of failing the whole query:</p>
+<pre><code>let lookback = 30d;
+let ips = dynamic(["185.220.101.45", "45.137.21.9"]);
+union isfuzzy=true
+  (DeviceNetworkEvents | where Timestamp &gt; ago(lookback) | where RemoteIP in (ips)
+     | project Timestamp, Source="DeviceNetworkEvents", DeviceName, Indicator=RemoteIP, InitiatingProcessFileName),
+  (SigninLogs | where TimeGenerated &gt; ago(lookback) | where IPAddress in (ips)
+     | project Timestamp=TimeGenerated, Source="SigninLogs", UserPrincipalName, Indicator=IPAddress, ResultType)
+| sort by Timestamp desc</code></pre>
+<p>For domains, use <code>has_any</code> rather than <code>==</code>, so <code>update-cdn-sync.xyz</code> also matches <code>cdn.update-cdn-sync.xyz</code> and full URLs. For hashes, check SHA-256, SHA-1 and MD5 columns; reports mix them, and Defender records all three.</p>
+
+<h2>And in Splunk?</h2>
+<p>A raw search works anywhere, but name the fields so you don't match a hash that happens to appear in an unrelated log line:</p>
+<pre><code>index=* earliest=-30d (src_ip IN ("185.220.101.45","45.137.21.9") OR dest_ip IN ("185.220.101.45","45.137.21.9"))
+| stats count min(_time) as first_seen max(_time) as last_seen by index, sourcetype, host</code></pre>
+<p>If your data is mapped to the CIM, <code>tstats</code> over the Network_Traffic data model is far faster on large environments. It only sees accelerated, CIM-tagged data, so when it returns nothing, confirm with a raw search before you report "not seen".</p>
+
+<h2>How far back should I look?</h2>
+<p>Match the window to the report. For an active campaign, 30 days is a reasonable default; for indicators from a long-running intrusion, go as far as your retention allows, often 90 days in Sentinel's analytics tier. Infrastructure gets reused, so an IP that hosted C2 last month may be benign today. A hit means "investigate", not "compromised".</p>
+
+<h2>What if the list has hundreds of indicators?</h2>
+<p>Large inline arrays make queries slow and hard to read. In Sentinel, load the list into a watchlist and join on it with <code>_GetWatchlist('report-iocs')</code>. In Splunk, use a lookup file with <code>| inputlookup</code>. Both let you reuse the same list for a scheduled detection after the hunt.</p>
+
+<h2>What are the usual mistakes?</h2>
+<ul>
+  <li><strong>Hunting defanged values.</strong> <code>185.220.101[.]45</code> will never match. Refang before searching.</li>
+  <li><strong>Searching only one table.</strong> No network hit doesn't mean no contact; check DNS, proxy and email too.</li>
+  <li><strong>Forgetting private IPs.</strong> Reports sometimes include internal addresses from the victim network. They'll match your own hosts and waste an afternoon.</li>
+  <li><strong>Treating zero results as proof.</strong> Check that the tables actually contain data for the period, and that the devices you care about send logs.</li>
+</ul>
+<p>Pulling the indicators out of a report cleanly is the first step; the <a href="../defang-iocs/">defanging guide</a> covers the formats you'll meet, and <a href="../investigate-suspicious-ip/">investigating a suspicious IP</a> covers what to do with a hit.</p>
+
+<h2>FAQ</h2>
+<h3>Why does my KQL query fail with "failed to resolve table"?</h3>
+<p>The table doesn't exist in that workspace, for example SigninLogs without the Entra ID connector. Use <code>union isfuzzy=true</code> so missing tables are skipped.</p>
+<h3>Should I use has or contains for domains?</h3>
+<p>Use <code>has</code> or <code>has_any</code>. They use the term index and are much faster than <code>contains</code>, and they match whole terms, which is what you want for domains.</p>
+<h3>Does Defender XDR advanced hunting keep data as long as Sentinel?</h3>
+<p>No. Advanced hunting keeps 30 days. For older data, query the same tables in Sentinel if you stream Defender data there.</p>
+<h3>Can I turn a hunting query into a detection?</h3>
+<p>Yes. Once the indicator list is in a watchlist or lookup, save the query as a scheduled analytics rule or saved search, with a shorter window such as one hour.</p>
+    <div class="next">
+      <div><b>Generate the queries from a list</b><p>The Hunting Query Generator turns pasted indicators into ready-to-run KQL, Splunk SPL, CrowdStrike LogScale and Elastic queries, split by type.</p></div>
+      <a class="btn btn-primary" href="../../hunt-queries/">Open Query Generator</a>
+    </div>
+    <div class="next">
+      <div><b>Only hunt for the bad ones</b><p>IOC Triage, our free browser extension, checks each indicator against 15 threat-intel sources from a right-click before you spend query time on it.</p></div>
+      <a class="btn btn-ghost" href="https://chromewebstore.google.com/detail/dncgneacahomieionjkaofmfnojlkfmc?utm_source=tools.opsvantage.net&amp;utm_medium=guide&amp;utm_campaign=ioc-hunting-queries-kql-splunk">Add IOC Triage to Chrome</a>
+    </div>
+  </article>
+<!--/email_off--></main>
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../../">All tools</a> · <a href="../../guides/">Guides</a> · <a href="../../privacy/">Privacy &amp; terms</a> · <a href="../../how-it-works/">How it works</a> · <a href="../../changelog/">Changelog</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../../assets/hub.js?v=20261107"></script>
+</body>
+</html>

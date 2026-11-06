@@ -64,7 +64,8 @@
   function render() {
     var items = state.items, out = $('out');
     var has = items.length > 0;
-    ['copy-all', 'csv', 'defang-text'].forEach(function (id) { $(id).disabled = !has; });
+    ['copy-all', 'csv', 'defang-text', 'to-hunt'].forEach(function (id) { $(id).disabled = !has; });
+    $('to-cve').hidden = !items.some(function (x) { return x.group === 'cve'; });
     $('stats').innerHTML = has ? GROUPS.map(function (g) {
       var n = items.filter(function (x) { return x.group === g.key; }).length;
       return n ? '<div class="stat"><b>' + n + '</b><span>' + g.label + '</span></div>' : '';
@@ -146,6 +147,8 @@
   var handed = OV.takeHandoff();
   if (handed) { $('input').value = handed; scan(); }
 
+  $('to-hunt').addEventListener('click', function () { OV.sendTo('/hunt-queries/', state.items.filter(function (x) { return /^(ip|domain|url|hash|email)$/.test(x.group); }).map(function (x) { return x.value; }).join('\n')); });
+  $('to-cve').addEventListener('click', function () { OV.sendTo('/cve-prioritizer/', state.items.filter(function (x) { return x.group === 'cve'; }).map(function (x) { return x.value; }).join('\n')); });
   $('copy-all').addEventListener('click', function () { OV.copy(allText(), 'All indicators copied'); });
   $('defang-text').addEventListener('click', function () { OV.copy(defangedText(), 'Defanged text copied'); });
   $('csv').addEventListener('click', function () {

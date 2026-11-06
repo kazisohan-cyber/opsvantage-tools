@@ -194,7 +194,12 @@
     signins: { path: '/m365-signins/', name: 'M365 Sign-in Review', what: 'an Entra ID sign-in log export' },
     events: { path: '/event-triage/', name: 'Windows Event Triage', what: 'exported Windows events' },
     dmarc: { path: '/dmarc-checker/', name: 'SPF, DKIM & DMARC Checker', what: 'a domain' },
-    ioc: { path: '/ioc-extractor/', name: 'IOC Extractor', what: 'text with indicators' }
+    ioc: { path: '/ioc-extractor/', name: 'IOC Extractor', what: 'text with indicators' },
+    links: { path: '/link-unwrapper/', name: 'Phishing Link Unwrapper', what: 'links to unwrap and check' },
+    cve: { path: '/cve-prioritizer/', name: 'CVE Prioritizer', what: 'a list of CVEs' },
+    payload: { path: '/payload-decoder/', name: 'Payload Decoder', what: 'an encoded payload' },
+    jwt: { path: '/jwt-decoder/', name: 'JWT Token Decoder', what: 'a JWT token' },
+    hunt: { path: '/hunt-queries/', name: 'Hunting Query Generator', what: 'indicators to hunt for' }
   };
   function detect(text) {
     var t = String(text || '').trim();
@@ -204,6 +209,13 @@
     if (hdrLines >= 2 || (/^From:/im.test(head) && /^Subject:/im.test(head) && /^(Date|To|Message-ID):/im.test(head))) return TOOLS.email;
     if ((/username/i.test(first) && /ip ?address/i.test(first)) || (/"userPrincipalName"/.test(head) && /"(ipAddress|createdDateTime)"/.test(head))) return TOOLS.signins;
     if (/<Event[\s>]/.test(head) || /(^|,|")\s*(event ?id|eventcode|event code|timecreated|providername)\s*("|,|$)/i.test(first) || /"(EventID|EventCode|event_id)"\s*:/.test(head)) return TOOLS.events;
+    // A token, an encoded payload, a CVE list or a list of links each have their own tool.
+    if (/^(bearer\s+)?eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]*$/i.test(t)) return TOOLS.jwt;
+    if (/(?:^|\s)-(?:e|ec|en|enc|encodedcommand)\s+[A-Za-z0-9+/=]{40,}/i.test(t) || /FromBase64String\(/i.test(t) || (!/\s/.test(t) && t.length >= 60 && /^[A-Za-z0-9+/]+={0,2}$/.test(t))) return TOOLS.payload;
+    var cves = t.match(/CVE-\d{4}-\d{4,7}/gi) || [];
+    var lines = t.split(/\r?\n/).filter(function (l) { return l.trim(); });
+    if (cves.length >= 2 && cves.length >= lines.length * 0.6) return Object.assign({ alt: TOOLS.ioc }, TOOLS.cve);
+    if (lines.length <= 25 && lines.every(function (l) { return /^\s*(h(xx|tt)ps?)(:\/\/|\[:\]\/\/)\S+\s*$/i.test(l); })) return Object.assign({ alt: TOOLS.ioc }, TOOLS.links);
     // A bare domain: is it spoofable? (A full URL is a link to check, so it goes to the IOC Extractor.)
     if (!/\s/.test(t) && /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}$/i.test(t)) return Object.assign({ alt: TOOLS.ioc }, TOOLS.dmarc, { value: t.toLowerCase() });
     return TOOLS.ioc;
