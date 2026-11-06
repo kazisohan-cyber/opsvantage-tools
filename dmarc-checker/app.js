@@ -163,6 +163,6 @@
     if (e.target.id === 'copy-report' && last) OV.copy(report(), 'Report copied');
   });
 
-  var initial = normDomain(new URLSearchParams(location.search).get('domain'));
+  var initial = normDomain(OV.takeHandoff() || new URLSearchParams(location.search).get('domain'));
   if (initial) { $('domain').value = initial; run(initial); }
 })();

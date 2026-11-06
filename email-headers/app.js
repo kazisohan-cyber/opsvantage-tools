@@ -76,6 +76,7 @@
       VTEXT[r.verdict] + '</div></div></div>';
     html += '<div class="stats">' + pill('SPF', a.spf, a.spfDomain) + pill('DKIM', a.dkim || (a.dkimDomain ? '' : 'none'), a.dkimDomain) +
       pill('DMARC', a.dmarc, a.dmarcFrom) + (a.compauth ? pill('CompAuth', a.compauth) : '') + '</div>';
+    html += emailSteps(r);
     html += '<h3 style="font-family:var(--display);font-size:.95rem;margin:4px 0 8px">Findings</h3><ul class="reasons">' +
       r.reasons.map(function (x) { return '<li class="' + (x.kind === 'bad' ? 'bad' : x.kind === 'good' ? 'good' : '') + '">' + OV.esc(x.t) + '</li>'; }).join('') + '</ul>';
     if (r.iocs.length) {
@@ -87,6 +88,9 @@
         }).join('') + '</ul>';
     }
     if (r.body) html += bodyHtml(r.body);
+    var fromDom = (r.summary.fromAddr || '').split('@')[1] || '';
+    html += '<div class="send-row"><button class="btn btn-ghost btn-sm" type="button" id="to-ioc">Send all indicators to IOC Extractor</button>' +
+      (fromDom ? '<button class="btn btn-ghost btn-sm" type="button" id="to-dmarc" data-domain="' + OV.esc(fromDom) + '">Can ' + OV.esc(fromDom) + ' be spoofed?</button>' : '') + '</div>';
     $('out').innerHTML = html;
 
     $('hop-count').textContent = r.hops.length;
@@ -103,6 +107,32 @@
     var rows = [['From', s.from], ['Reply-To', s.replyTo], ['Return-Path', s.returnPath], ['To', s.to], ['Subject', s.subject], ['Date', s.date], ['Message-ID', s.messageId], ['Mailer', s.mailer], ['Originating IP', r.origin]];
     $('summary').innerHTML = rows.filter(function (x) { return x[1]; }).map(function (x) { return '<dt>' + x[0] + '</dt><dd class="' + (x[0] === 'Message-ID' || x[0] === 'Originating IP' ? 'mono' : '') + '">' + OV.esc(x[1]) + '</dd>'; }).join('');
     $('details').hidden = false;
+  }
+
+  function emailSteps(r) {
+    var s = r.summary, origin = r.origin, fromDom = (s.fromAddr || '').split('@')[1] || '';
+    var subj = s.subject ? '"' + s.subject.slice(0, 60) + '"' : 'this subject';
+    // When DMARC fails the From domain was forged (it may belong to a real partner): block the attacker's own
+    // reply / bounce domain instead.
+    var forged = r.auth.dmarc === 'fail' || r.auth.dmarc === 'none' && r.auth.spf === 'fail';
+    var dom = function (a) { return (a || '').split('@')[1] || ''; };
+    var blockDom = forged ? (dom(s.replyTo) !== fromDom && dom(s.replyTo)) || (dom(s.returnPath) !== fromDom && dom(s.returnPath)) || '' : fromDom;
+    var block = [blockDom ? 'the sender domain ' + blockDom : '', origin ? 'the originating IP ' + origin : ''].filter(Boolean).join(' and ');
+    if (r.verdict === 'malicious') return OV.nextSteps([
+      'Don\'t reply, click or open attachments.' + (block ? ' Block ' + block + ' at your mail gateway.' : '') +
+        (forged && fromDom ? ' The From address on ' + fromDom + ' was forged, so don\'t block that domain.' : ''),
+      { t: 'Find every copy: search all mailboxes for ' + subj + ' from the same sender and remove them (Microsoft 365: Threat Explorer or Content search).', href: '/guides/phishing-triage-checklist/', link: 'Checklist' },
+      { t: 'If anyone clicked or typed a password: reset it, revoke their sessions and check their mailbox for new inbox rules.', href: '/guides/m365-inbox-rules-forwarding/', link: 'Inbox rules' }
+    ], 'bad');
+    if (r.verdict === 'suspicious') return OV.nextSteps([
+      'Confirm with the sender through a channel you already trust (a known phone number), not by replying.',
+      'Look up the links, attachment hashes and originating IP with the buttons below before anyone acts on the email.',
+      r.body ? '' : 'Drop the whole .eml file here to also check the links and attachments inside it.'
+    ], 'warn');
+    return OV.nextSteps([
+      r.body ? 'No strong red flags. If the email asks for money, a password or new bank details, still confirm by phone.' : 'Only the headers were checked. Drop the whole .eml file to also check the links and attachments inside it.',
+      fromDom ? 'Check whether ' + fromDom + ' could be spoofed with the button at the end.' : ''
+    ]);
   }
 
   function fmtSize(n) { return n < 1024 ? n + ' B' : n < 1048576 ? Math.round(n / 1024) + ' KB' : (n / 1048576).toFixed(1) + ' MB'; }
@@ -187,6 +217,18 @@
   $('note').addEventListener('click', function () { if (last && last.ok) OV.copy(ticketNote(), 'Ticket note copied'); });
   $('out').addEventListener('click', function (e) {
     var b = e.target.closest('.copy');
-    if (b) OV.copy(b.dataset.value, 'Copied');
+    if (b) { OV.copy(b.dataset.value, 'Copied'); return; }
+    if (e.target.closest('#to-dmarc')) { OV.sendTo('/dmarc-checker/', e.target.closest('#to-dmarc').dataset.domain); return; }
+    if (e.target.closest('#to-ioc') && last && last.ok) {
+      var lines = last.iocs.map(function (x) { return x.value; });
+      if (last.body) {
+        last.body.attachments.forEach(function (x) { lines.push(x.sha256 + ' ' + x.name); });
+        last.body.urls.forEach(function (u) { lines.push(u.real); });
+      }
+      OV.sendTo('/ioc-extractor/', lines.join('\n'));
+    }
   });
+  OV.ctrlEnter($('input'), analyze);
+  var handed = OV.takeHandoff();
+  if (handed) { $('input').value = handed; analyze(); }
 })();

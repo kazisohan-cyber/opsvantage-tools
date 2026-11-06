@@ -336,6 +336,43 @@
 
   var last = null;
 
+  // One concrete next action per technique, most severe finding first; the top three distinct ones are shown.
+  var ACTIONS = {
+    'T1490': { t: 'Isolate the host now: deleting shadow copies is the step right before ransomware encrypts.' },
+    'T1070.001': { t: 'Treat it as an incident: find who cleared the log and pull the same period from your SIEM or log forwarder, which still has the events.' },
+    'T1110': { t: 'A logon succeeded right after many failures: reset that password, end its sessions and check what the account did next (4624, 4688).' },
+    'T1110.001': { t: 'Block the source IP and confirm none of its attempts succeeded; turn on account lockout if it is off.' },
+    'T1110.003': { t: 'Block the spraying IP and check every targeted account for a later successful logon.' },
+    'T1558.003': { t: 'Reset the targeted service account passwords to 25+ random characters and move them to AES or gMSA.', href: '/guides/kerberoasting-event-4769/', link: 'Guide' },
+    'T1003.006': { t: 'DCSync from a non-DC: disable the account, reset krbtgt twice and treat the domain as compromised.' },
+    'T1003.001': { t: 'LSASS was read: isolate the host and reset passwords of everyone who logged on to it.' },
+    'T1003': { t: 'Credential dumping signs: isolate the host and reset passwords of accounts that used it.' },
+    'T1098': { t: 'Check for a change ticket for the group change; if there is none, remove the member and disable the account.', href: '/guides/new-admin-account-detection/', link: 'Guide' },
+    'T1136.001': { t: 'Confirm the new account was requested; if not, disable it and find who created it.', href: '/guides/new-admin-account-detection/', link: 'Guide' },
+    'T1136': { t: 'Confirm the new account was requested; if not, disable it and find who created it.' },
+    'T1543.003': { t: 'Get the service binary\'s hash and check it; stop and remove the service if it is not a known install.' },
+    'T1569.002': { t: 'PsExec-style remote service: confirm an admin ran it, otherwise check the source host.' },
+    'T1059.001': { t: 'Decode the PowerShell command and see what it downloads or runs.', href: '/guides/decode-encoded-powershell/', link: 'Decode' },
+    'T1105': { t: 'Find the downloaded file and its hash, and block the download URL.' },
+    'T1021.001': { t: 'Close RDP to the internet (VPN or gateway only) and review what that session did.' },
+    'T1562.001': { t: 'Turn the protection back on and find out who turned it off: attackers do this before running tools.' },
+    'T1053.005': { t: 'Open the scheduled task, check its command and remove it if nobody can explain it.' }
+  };
+  function eventSteps(findings) {
+    var seen = {}, steps = [];
+    // Within the same severity, the actions that stop damage spreading come first.
+    var URGENT = { 'T1490': 0, 'T1003.006': 1, 'T1003.001': 2 };
+    var rank = function (f) { return SEV_ORDER[f.sev] * 10 + (f.mitre in URGENT ? URGENT[f.mitre] : 5); };
+    findings.slice().sort(function (a, b) { return rank(a) - rank(b); }).forEach(function (f) {
+      var a = ACTIONS[f.mitre] || ACTIONS[String(f.mitre).split('.')[0]];
+      if (a && !seen[a.t] && steps.length < 3 && f.sev !== 'info' && f.sev !== 'low') { seen[a.t] = 1; steps.push(a); }
+    });
+    if (!findings.length) return OV.nextSteps(['No rule matched. Widen the time range or add Sysmon and PowerShell (4104) logs, which most attacks show up in.']);
+    if (!steps.length) steps.push({ t: 'Read each finding below and confirm with the account owner or a change ticket.' });
+    var top = findings[0].sev;
+    return OV.nextSteps(steps, top === 'crit' || top === 'high' ? 'bad' : top === 'med' ? 'warn' : '');
+  }
+
   function analyze() {
     var raw = $('input').value;
     var events;
@@ -359,6 +396,7 @@
       '<div class="stat"><b style="color:#ef4444">' + (count('crit') + count('high')) + '</b><span>critical / high</span></div>' +
       '<div class="stat"><b style="color:var(--amber)">' + count('med') + '</b><span>medium</span></div></div>';
     if (last.from) html += '<p class="sub" style="margin:-4px 0 12px;font-size:.82rem">' + fmtTime(last.from) + ' → ' + fmtTime(last.to) + '</p>';
+    html += eventSteps(findings);
     html += findings.length ? findings.map(function (f, i) {
       return '<div class="finding"><div class="finding-h"><span class="sev ' + f.sev + '">' + SEV_LABEL[f.sev] + '</span><b>' + OV.esc(f.title) + '</b>' +
         (f.mitre ? '<span class="pill">' + OV.esc(f.mitre) + '</span>' : '') + '</div><p>' + OV.esc(f.detail) + '</p>' +
@@ -368,6 +406,7 @@
     }).join('') : '<div class="verdict good"><div><div class="v">No findings</div><div class="sub" style="margin:2px 0 0">None of the built-in rules matched. That is not proof of a clean system, only that these patterns are absent.</div></div></div>';
     if (ips.length) html += '<h3 style="font-family:var(--display);font-size:.95rem;margin:14px 0 8px">Public IPs seen <button class="copy" type="button" data-value="' + OV.esc(ips.join('\n')) + '">Copy all</button></h3><ul class="ioc-list">' +
       ips.slice(0, 30).map(function (ip) { return '<li><span class="ioc-v"><span>' + OV.esc(ip) + '</span>' + OV.pivots('ip', ip) + '</span><button class="copy" type="button" data-value="' + OV.esc(ip) + '">Copy</button></li>'; }).join('') + '</ul>';
+    if (ips.length) html += '<div class="send-row"><button class="btn btn-ghost btn-sm" type="button" id="to-ioc">Send IPs to IOC Extractor (CSV, defang)</button></div>';
     $('out').innerHTML = html;
     $('note').disabled = false;
 
@@ -428,5 +467,12 @@
   $('input').addEventListener('dragover', function (e) { e.preventDefault(); });
   $('input').addEventListener('drop', function (e) { if (e.dataTransfer.files && e.dataTransfer.files[0]) { e.preventDefault(); loadFile(e.dataTransfer.files[0]); } });
   $('note').addEventListener('click', function () { if (last) OV.copy(ticketNote(), 'Ticket note copied'); });
-  $('out').addEventListener('click', function (e) { var b = e.target.closest('.copy'); if (b) OV.copy(b.dataset.value, 'Copied'); });
+  $('out').addEventListener('click', function (e) {
+    var b = e.target.closest('.copy');
+    if (b) { OV.copy(b.dataset.value, 'Copied'); return; }
+    if (e.target.closest('#to-ioc') && last) OV.sendTo('/ioc-extractor/', last.ips.join('\n'));
+  });
+  OV.ctrlEnter($('input'), analyze);
+  var handed = OV.takeHandoff();
+  if (handed) { $('input').value = handed; analyze(); }
 })();

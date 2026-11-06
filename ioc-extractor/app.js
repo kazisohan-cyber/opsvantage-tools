@@ -73,7 +73,18 @@
       out.innerHTML = '<p class="empty">' + ($('input').value.trim() ? 'No indicators found in this text.' : 'Indicators will appear here as you paste.') + '</p>';
       return;
     }
-    out.innerHTML = GROUPS.map(function (g) {
+    var n = function (grp) { return items.filter(function (x) { return x.group === grp; }).length; };
+    var pubIps = items.filter(function (x) { return x.group === 'ip' && !I.isPrivateIp(x.value); }).length;
+    var first = [];
+    if (n('hash')) first.push(n('hash') + ' hash' + (n('hash') === 1 ? '' : 'es'));
+    if (n('url')) first.push(n('url') + ' URL' + (n('url') === 1 ? '' : 's'));
+    if (pubIps) first.push(pubIps + ' public IP' + (pubIps === 1 ? '' : 's'));
+    var steps = OV.nextSteps([
+      first.length ? 'Check the ' + first.join(', ') + ' first: the buttons under each one open VirusTotal, AbuseIPDB and similar sources.' : 'Use the buttons under each indicator to look it up.',
+      'Put the ones you confirm as bad on your blocklist: "Copy" on a group gives a clean list, or download the CSV.',
+      'Paste "Copy text with IOCs defanged" into the ticket or chat, so nobody clicks a live link by accident.'
+    ]);
+    out.innerHTML = steps + GROUPS.map(function (g) {
       var list = items.filter(function (x) { return x.group === g.key; });
       if (!list.length) return '';
       return '<div class="group"><div class="group-h"><span><b>' + g.label + '</b><span class="count">' + list.length +
@@ -128,6 +139,9 @@
     if (b.dataset.group) OV.copy(groupText(b.dataset.group), 'List copied');
     else OV.copy(b.dataset.value, 'Copied');
   });
+  var handed = OV.takeHandoff();
+  if (handed) { $('input').value = handed; scan(); }
+
   $('copy-all').addEventListener('click', function () { OV.copy(allText(), 'All indicators copied'); });
   $('defang-text').addEventListener('click', function () { OV.copy(defangedText(), 'Defanged text copied'); });
   $('csv').addEventListener('click', function () {

@@ -223,6 +223,32 @@
 
   var last = null;
 
+  // Matched on the finding title, most severe first; the top three distinct actions are shown.
+  var SIGNIN_ACTIONS = [
+    [/MFA fatigue/i, { t: 'The password is known: reset it, revoke the user\'s sessions and switch MFA to number matching.', href: '/guides/mfa-fatigue-push-bombing/', link: 'Guide' }],
+    [/impossible travel|outside/i, { t: 'Ask the user whether they were travelling or on a VPN. If not: reset the password, revoke sessions and check for new inbox rules.', href: '/guides/m365-impossible-travel/', link: 'Guide' }],
+    [/spraying|brute force/i, { t: 'Block the attacking IP and check whether any of the targeted accounts later signed in successfully.' }],
+    [/legacy/i, { t: 'Block legacy authentication with Conditional Access: it skips MFA and is where most spraying comes from.', href: '/guides/block-legacy-authentication-m365/', link: 'Guide' }],
+    [/script or tool|ROPC/i, { t: 'Find out what ran the scripted sign-in; if nobody owns it, reset that account and revoke its sessions.' }],
+    [/device code/i, { t: 'Block device code flow with Conditional Access unless you use it for meeting-room devices.' }],
+    [/risk/i, { t: 'Open the user in Entra ID Protection, confirm or dismiss the risk, and reset the password if it was them.' }],
+    [/without MFA/i, { t: 'Require MFA for these sign-ins with Conditional Access, or confirm they came from trusted locations.' }]
+  ];
+  function signinSteps(findings) {
+    if (!findings.length) return OV.nextSteps(['No rule matched. Check that the export covers enough days and includes failed sign-ins.']);
+    var seen = {}, steps = [];
+    findings.forEach(function (f) {
+      if (f.sev === 'info' || steps.length >= 3) return;
+      for (var i = 0; i < SIGNIN_ACTIONS.length; i++) {
+        var a = SIGNIN_ACTIONS[i];
+        if (a[0].test(f.title)) { if (!seen[i]) { seen[i] = 1; steps.push(a[1]); } break; }
+      }
+    });
+    if (!steps.length) return '';
+    var top = findings[0].sev;
+    return OV.nextSteps(steps, top === 'crit' || top === 'high' ? 'bad' : top === 'med' ? 'warn' : '');
+  }
+
   function analyze() {
     var raw = $('input').value, L;
     var fail = function (msg) { $('out').innerHTML = '<p class="empty">' + OV.esc(msg) + '</p>'; $('users-panel').hidden = $('geo-panel').hidden = true; $('note').disabled = true; };
@@ -246,6 +272,7 @@
       '<div class="stat"><b>' + Math.round(okN / L.length * 100) + '%</b><span>successful</span></div>' +
       '<div class="stat"><b style="color:#ef4444">' + (cnt('crit') + cnt('high')) + '</b><span>critical / high</span></div></div>';
     if (times.length) html += '<p class="sub" style="margin:-4px 0 12px;font-size:.82rem">' + fmt(last.from) + ' → ' + fmt(last.to) + (home ? ' · home country ' + home + (homeIn ? '' : ' (auto)') : '') + '</p>';
+    html += signinSteps(findings);
     html += findings.length ? findings.map(function (f) {
       return '<div class="finding"><div class="finding-h"><span class="sev ' + f.sev + '">' + SEV_LABEL[f.sev] + '</span><b>' + OV.esc(f.title) + '</b>' +
         (f.mitre ? '<span class="pill">' + OV.esc(f.mitre) + '</span>' : '') + '</div><p>' + OV.esc(f.detail) + '</p>' +
@@ -253,17 +280,18 @@
         (f.rows.length > 6 ? '<p>…and ' + (f.rows.length - 6) + ' more.</p>' : '') + '</details></div>';
     }).join('') : '<div class="verdict good"><div><div class="v">No findings</div><div class="sub" style="margin:2px 0 0">None of the built-in rules matched this export.</div></div></div>';
     // IPs that appear in findings first, then the rest with failures, each with one-click lookups.
-    var flagged = new Set();
-    findings.forEach(function (f) { if (f.sev !== 'info') f.rows.forEach(function (s) { if (s.ip) flagged.add(s.ip); }); });
+    var ipFlag = new Set();
+    findings.forEach(function (f) { if (f.sev !== 'info') f.rows.forEach(function (s) { if (s.ip) ipFlag.add(s.ip); }); });
     var ipStats = {};
     L.forEach(function (s) { if (!s.ip || window.VSIoc.isPrivateIp(s.ip)) return; var o = ipStats[s.ip] || (ipStats[s.ip] = { ip: s.ip, n: 0, bad: 0, users: new Set(), country: s.country }); o.n++; if (s.status !== 'success') o.bad++; o.users.add(s.user); });
-    var ipList = Object.keys(ipStats).map(function (k) { return ipStats[k]; }).filter(function (o) { return flagged.has(o.ip) || o.bad; })
-      .sort(function (a, b) { return (flagged.has(b.ip) - flagged.has(a.ip)) || (b.bad - a.bad); }).slice(0, 25);
+    var ipList = Object.keys(ipStats).map(function (k) { return ipStats[k]; }).filter(function (o) { return ipFlag.has(o.ip) || o.bad; })
+      .sort(function (a, b) { return (ipFlag.has(b.ip) - ipFlag.has(a.ip)) || (b.bad - a.bad); }).slice(0, 25);
     if (ipList.length) html += '<h3 style="font-family:var(--display);font-size:.95rem;margin:14px 0 8px">IPs worth checking <button class="copy" type="button" data-value="' + OV.esc(ipList.map(function (o) { return o.ip; }).join('\n')) + '">Copy all</button></h3><ul class="ioc-list">' +
       ipList.map(function (o) {
         return '<li><span class="ioc-v"><span>' + OV.esc(o.ip) + ' <span class="sub">' + (o.country ? OV.esc(o.country) + ' · ' : '') + o.n + ' sign-in' + (o.n === 1 ? '' : 's') + (o.bad ? ', ' + o.bad + ' failed' : '') + ', ' + o.users.size + ' user' + (o.users.size === 1 ? '' : 's') + '</span></span>' +
           OV.pivots('ip', o.ip) + '</span><button class="copy" type="button" data-value="' + OV.esc(o.ip) + '">Copy</button></li>';
       }).join('') + '</ul>';
+    if (ipList.length) html += '<div class="send-row"><button class="btn btn-ghost btn-sm" type="button" id="to-ioc" data-ips="' + OV.esc(ipList.map(function (o) { return o.ip; }).join('\n')) + '">Send these IPs to IOC Extractor (CSV, defang)</button></div>';
     $('out').innerHTML = html;
     $('note').disabled = false;
 
@@ -340,5 +368,13 @@
   $('input').addEventListener('dragover', function (e) { e.preventDefault(); });
   $('input').addEventListener('drop', function (e) { if (e.dataTransfer.files && e.dataTransfer.files[0]) { e.preventDefault(); loadFile(e.dataTransfer.files[0]); } });
   $('note').addEventListener('click', function () { if (last) OV.copy(ticketNote(), 'Ticket note copied'); });
-  $('out').addEventListener('click', function (e) { var b = e.target.closest('.copy'); if (b) OV.copy(b.dataset.value, 'Copied'); });
+  $('out').addEventListener('click', function (e) {
+    var b = e.target.closest('.copy');
+    if (b) { OV.copy(b.dataset.value, 'Copied'); return; }
+    var t = e.target.closest('#to-ioc');
+    if (t) OV.sendTo('/ioc-extractor/', t.dataset.ips);
+  });
+  OV.ctrlEnter($('input'), analyze);
+  var handed = OV.takeHandoff();
+  if (handed) { $('input').value = handed; analyze(); }
 })();

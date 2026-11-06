@@ -120,5 +120,59 @@
     }).join('') + '</span>';
   }
 
-  window.OV = { toast: toast, copy: copy, download: download, esc: esc, csvCell: csvCell, parseCsv: parseCsv, pivots: pivots };
+  // ---------------------------------------------------------------- hand-off between tools
+  // Data moves through sessionStorage in this tab only (never the URL), and is read once.
+  var HKEY = 'ov-handoff';
+  function sendTo(path, text) {
+    try { sessionStorage.setItem(HKEY, JSON.stringify({ to: path, text: String(text || ''), t: Date.now() })); }
+    catch (err) { copy(text, 'Storage is blocked here, so the data was copied instead. Paste it'); }
+    location.href = path;
+  }
+  function takeHandoff() {
+    try {
+      var raw = sessionStorage.getItem(HKEY);
+      if (!raw) return '';
+      var h = JSON.parse(raw);
+      if (location.pathname.indexOf(h.to) < 0 || Date.now() - h.t > 5 * 60 * 1000) return '';
+      sessionStorage.removeItem(HKEY);
+      return h.text || '';
+    } catch (err) { return ''; }
+  }
+  /** Ctrl+Enter (Cmd+Enter on a Mac) in a field runs fn. */
+  function ctrlEnter(el, fn) {
+    if (el) el.addEventListener('keydown', function (e) { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); fn(); } });
+  }
+  /** "What to do now" box. steps: [text or {t, href}] (plain text; links open guides on this site). */
+  function nextSteps(steps, tone) {
+    steps = (steps || []).filter(Boolean);
+    if (!steps.length) return '';
+    return '<div class="next-steps' + (tone ? ' ' + tone : '') + '"><b>What to do now</b><ol>' + steps.map(function (s) {
+      if (typeof s === 'string') return '<li>' + esc(s) + '</li>';
+      return '<li>' + esc(s.t) + (s.href ? ' <a href="' + esc(s.href) + '">' + esc(s.link || 'How') + ' →</a>' : '') + '</li>';
+    }).join('') + '</ol></div>';
+  }
+
+  // ---------------------------------------------------------------- what was pasted?
+  var TOOLS = {
+    email: { path: '/email-headers/', name: 'Email Header Analyzer', what: 'email headers or an .eml message' },
+    signins: { path: '/m365-signins/', name: 'M365 Sign-in Review', what: 'an Entra ID sign-in log export' },
+    events: { path: '/event-triage/', name: 'Windows Event Triage', what: 'exported Windows events' },
+    dmarc: { path: '/dmarc-checker/', name: 'SPF, DKIM & DMARC Checker', what: 'a domain' },
+    ioc: { path: '/ioc-extractor/', name: 'IOC Extractor', what: 'text with indicators' }
+  };
+  function detect(text) {
+    var t = String(text || '').trim();
+    if (!t) return null;
+    var head = t.slice(0, 4000), first = head.split(/\r?\n/)[0];
+    var hdrLines = (head.match(/^(Received|Return-Path|Authentication-Results|DKIM-Signature|ARC-Seal|Delivered-To|X-MS-Exchange-[\w-]+|Message-ID|Received-SPF|X-Originating-IP):/gim) || []).length;
+    if (hdrLines >= 2 || (/^From:/im.test(head) && /^Subject:/im.test(head) && /^(Date|To|Message-ID):/im.test(head))) return TOOLS.email;
+    if ((/username/i.test(first) && /ip ?address/i.test(first)) || (/"userPrincipalName"/.test(head) && /"(ipAddress|createdDateTime)"/.test(head))) return TOOLS.signins;
+    if (/<Event[\s>]/.test(head) || /(^|,|")\s*(event ?id|eventcode|event code|timecreated|providername)\s*("|,|$)/i.test(first) || /"(EventID|EventCode|event_id)"\s*:/.test(head)) return TOOLS.events;
+    // A bare domain: is it spoofable? (A full URL is a link to check, so it goes to the IOC Extractor.)
+    if (!/\s/.test(t) && /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}$/i.test(t)) return Object.assign({ alt: TOOLS.ioc }, TOOLS.dmarc, { value: t.toLowerCase() });
+    return TOOLS.ioc;
+  }
+
+  window.OV = { toast: toast, copy: copy, download: download, esc: esc, csvCell: csvCell, parseCsv: parseCsv, pivots: pivots,
+    sendTo: sendTo, takeHandoff: takeHandoff, ctrlEnter: ctrlEnter, nextSteps: nextSteps, detect: detect, TOOLS: TOOLS };
 })();

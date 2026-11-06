@@ -53,6 +53,17 @@
       <span class="eyebrow">Free security tools</span>
       <h1>Small tools for <em>everyday SOC work</em>.</h1>
       <p class="lead">IOC extraction, email header analysis, DMARC checks, Windows event triage and Microsoft 365 sign-in review. Built by a working ops engineer for analysts, IT admins and MSPs. No account, no upload, no cookies.</p>
+      <form class="quick" id="quick" autocomplete="off">
+        <label for="quick-in" style="font-family:var(--display);font-weight:600">Paste anything and we'll pick the right tool</label>
+        <textarea class="input" id="quick-in" spellcheck="false" style="margin-top:8px" placeholder="Email headers, an alert or threat report, exported Windows events, an Entra sign-in log, or just a domain."></textarea>
+        <div class="row-actions">
+          <span class="quick-hint" id="quick-hint" aria-live="polite">It stays in this browser tab. Nothing is uploaded.</span>
+          <span style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-ghost btn-sm" type="button" id="quick-alt" hidden></button>
+            <button class="btn btn-primary btn-sm" type="submit" id="quick-go" disabled>Analyze</button>
+          </span>
+        </div>
+      </form>
       <div class="cta">
         <a class="btn btn-primary" href="#tools">Browse the tools</a>
         <a class="btn btn-ghost" href="https://chromewebstore.google.com/detail/dncgneacahomieionjkaofmfnojlkfmc?utm_source=tools.opsvantage.net&amp;utm_medium=home&amp;utm_campaign=hero">Add IOC Triage to Chrome</a>
@@ -188,5 +199,6 @@
   </div>
 </footer>
 <script src="assets/hub.js"></script>
+<script src="assets/home.js"></script>
 </body>
 </html>
