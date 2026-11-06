@@ -46,8 +46,8 @@
       if (!kids.length) return '<li class="t-leaf">' + label + '</li>';
       return '<li><details' + (depth < 1 ? ' open' : '') + '><summary>' + label + '</summary><ul>' + kids.map(function (k) { return node(k, depth + 1); }).join('') + '</ul></details></li>';
     };
-    return '<div class="viz" style="margin-top:12px"><h3>DNS lookups: ' + n + ' of 10</h3><div class="meter' + (n > 10 ? ' bad' : '') + '" role="img" aria-label="' + n + ' of 10 SPF lookups used">' + cells + '</div>' +
-      '<h3 style="margin-top:14px">Include tree <span class="sub" style="font-weight:400;font-size:.78rem">click to expand</span></h3><ul class="tree">' + node(spf.tree, 0) + '</ul></div>';
+    return '<div class="viz" style="margin-top:12px"><div class="viz-h">DNS lookups: ' + n + ' of 10</div><div class="meter' + (n > 10 ? ' bad' : '') + '" role="img" aria-label="' + n + ' of 10 SPF lookups used">' + cells + '</div>' +
+      '<div class="viz-h" style="margin-top:14px">Include tree <span class="sub" style="font-weight:400;font-size:.78rem">click to expand</span></div><ul class="tree">' + node(spf.tree, 0) + '</ul></div>';
   }
 
   function render(d, R) {

@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How the Tools Work: Checks, Scoring and Data Flow | OpsVantage Tools</title>
+<meta name="description" content="What each OpsVantage tool checks, how verdicts and scores are calculated, what leaves your browser, and the known limits.">
+<link rel="canonical" href="https://tools.opsvantage.net/how-it-works/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="How the Tools Work: Checks, Scoring and Data Flow | OpsVantage Tools">
+<meta property="og:description" content="What each OpsVantage tool checks, how verdicts and scores are calculated, what leaves your browser, and the known limits.">
+<meta property="og:url" content="https://tools.opsvantage.net/how-it-works/">
+<meta property="og:image" content="https://tools.opsvantage.net/assets/media/home-og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://tools.opsvantage.net/assets/media/home-og.jpg">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../assets/logo.png">
+<script src="../assets/theme.js?v=20261107"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/hub.css?v=20261107">
+<style>
+  .doc{max-width:760px;padding-bottom:64px}
+  .doc h2{margin:34px 0 10px}
+  .doc h3{font-family:var(--display);font-size:1.02rem;margin:20px 0 6px}
+  .doc p,.doc li{color:var(--muted);font-size:.97rem}
+  .doc p{margin:8px 0}
+  .doc ul{margin:8px 0 8px 20px}
+  .doc li{margin:4px 0}
+  .doc strong{color:var(--text)}
+  .doc .toc{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  .doc table.data td:first-child{font-weight:600;color:var(--text);white-space:nowrap}
+  .doc table.data td{vertical-align:top}
+  .doc code{font-family:var(--mono);font-size:.86em}
+  .doc p a,.doc li a,.doc td a{color:var(--link)}
+</style>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../"><img src="../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../#tools">All tools</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap doc">
+  <div class="tool-head">
+    <div class="crumbs"><a href="../">Tools</a> / How it works</div>
+    <h1>How the tools <em>work</em></h1>
+    <p class="lead">What each tool checks, how it reaches a verdict or a score, what (if anything) leaves your browser, and where its limits are. If a result looks wrong, this page should tell you why.</p>
+    <div class="toc"><a class="btn btn-ghost btn-sm" href="#data">Your data</a><a class="btn btn-ghost btn-sm" href="#email">Email headers</a><a class="btn btn-ghost btn-sm" href="#dmarc">DMARC</a><a class="btn btn-ghost btn-sm" href="#events">Windows events</a><a class="btn btn-ghost btn-sm" href="#signins">M365 sign-ins</a><a class="btn btn-ghost btn-sm" href="#ioc">IOC Extractor</a><a class="btn btn-ghost btn-sm" href="#posture">Posture Scanner</a></div>
+  </div>
+
+  <h2 id="data">What leaves your browser</h2>
+  <table class="data">
+    <tr><th>Tool</th><th>Network requests it makes</th></tr>
+    <tr><td>IOC Extractor</td><td>None.</td></tr>
+    <tr><td>Email Header Analyzer</td><td>None. A full .eml is parsed on your device; its HTML is read in an inert document only to collect links, so nothing in the email runs or loads.</td></tr>
+    <tr><td>Windows Event Triage</td><td>None.</td></tr>
+    <tr><td>M365 Sign-in Review</td><td>None. Country positions for the map and travel speeds come from a table built into the page.</td></tr>
+    <tr><td>SPF, DKIM &amp; DMARC Checker</td><td>DNS lookups for the domain you enter, sent from your browser to Cloudflare's resolver (1.1.1.1), with Google Public DNS as a fallback.</td></tr>
+    <tr><td>M365 Posture Scanner</td><td>Microsoft sign-in and read-only Microsoft Graph calls, straight from your browser to Microsoft, plus the same DNS lookups for each verified domain.</td></tr>
+  </table>
+  <p>Two things to know. First, the lookup buttons under an indicator (VirusTotal, AbuseIPDB, urlscan and so on) open that service in a new tab with the value in the address, so that service sees it. Nothing is sent until you click. Second, when you send results from one tool to another, the text is held in this tab's session storage, read once by the next tool and deleted.</p>
+  <p>Full details, including what is stored in your browser, are in the <a href="../privacy/">privacy policy</a>.</p>
+
+  <h2 id="email">Email Header Analyzer</h2>
+  <h3>What it reads</h3>
+  <ul>
+    <li><strong>Authentication-Results</strong> (and ARC copies), Received-SPF and DKIM-Signature, for SPF, DKIM, DMARC and Microsoft's composite authentication.</li>
+    <li><strong>Received</strong> headers, oldest first, for the route and the delay at each hop. The IP inside the brackets is the one the receiving server saw on the connection, so it wins over the name the sender typed.</li>
+    <li><strong>From, Reply-To, Return-Path and Message-ID</strong>, compared with each other and with a list of well-known brands.</li>
+    <li>With a whole .eml: every link (the address shown and the address it really goes to, with Microsoft Safe Links unwrapped) and every attachment (name, size, SHA-256 and risky types such as HTML, ISO, LNK or macro-enabled Office files).</li>
+  </ul>
+  <h3>How the verdict is reached</h3>
+  <p>Each signal adds or removes points. DMARC fail adds 30, SPF fail 25, a Reply-To on another organisation's domain 25, a brand in the display name sent from someone else's domain 25; DMARC pass removes 15. A total of 45 or more is <strong>malicious</strong>, 18 or more <strong>suspicious</strong>, and -15 or less <strong>benign</strong>. Brand impersonation never scores below suspicious, because a phisher's own domain can pass SPF, DKIM and DMARC perfectly. Risky attachments, link text that hides a different domain, or links the brand checks block raise the verdict further.</p>
+  <h3>Limits</h3>
+  <p>Headers added by your own mail system are trusted as written; anything before the first server you control could be forged. A clean result means these patterns are absent, not that the email is safe.</p>
+
+  <h2 id="dmarc">SPF, DKIM &amp; DMARC Checker</h2>
+  <h3>Score out of 100</h3>
+  <table class="data">
+    <tr><th>Part</th><th>Points</th></tr>
+    <tr><td>SPF</td><td>Up to 25: 25 for <code>-all</code>, 20 for <code>~all</code>, 5 or less for <code>?all</code>, <code>+all</code>, no "all", more than one record, or more than 10 DNS lookups</td></tr>
+    <tr><td>DMARC</td><td>Up to 40, highest for <code>p=reject</code> at 100%</td></tr>
+    <tr><td>DKIM</td><td>Up to 20, from keys found on 20+ common selectors (or the one you add) and their strength</td></tr>
+    <tr><td>Extras</td><td>5 each for aggregate reports (<code>rua</code>), MTA-STS and TLS-RPT</td></tr>
+  </table>
+  <p>Grades: A from 90, B from 75, C from 60, D from 40, F below. The SPF lookup count follows RFC 7208: every <code>include</code>, <code>a</code>, <code>mx</code>, <code>ptr</code>, <code>exists</code> and <code>redirect</code> costs one, nested includes count too, and more than 10 makes receivers return a permanent error.</p>
+  <h3>Limits</h3>
+  <p>DKIM can only be found on selectors the checker knows or you type in; a domain can sign with a selector it can't guess. The checker reads published records. It can't tell whether your sending services actually sign and align, which only a real message (or your DMARC reports) shows.</p>
+
+  <h2 id="events">Windows Event Triage</h2>
+  <h3>Input</h3>
+  <p>Event Viewer CSV or XML, PowerShell <code>Export-Csv</code>, <code>wevtutil /f:xml</code>, and SIEM exports in CSV or JSON from Microsoft Sentinel, Splunk and Elastic (winlogbeat / ECS). Field names from those formats are mapped to the Windows ones the rules use.</p>
+  <h3>Main rules</h3>
+  <table class="data">
+    <tr><th>Finding</th><th>When it fires</th></tr>
+    <tr><td>Brute force</td><td>10 or more failed logons (4625, 4771, 4776) for one account; critical from 50</td></tr>
+    <tr><td>Password spraying</td><td>Failures for 5 or more different accounts from one IP</td></tr>
+    <tr><td>Success after failures</td><td>A logon that succeeds after 5 or more failures for the same account</td></tr>
+    <tr><td>Kerberoasting</td><td>5 or more RC4 (0x17) service tickets for different services requested by one account</td></tr>
+    <tr><td>DCSync</td><td>Directory replication rights used by an account that isn't a domain controller</td></tr>
+    <tr><td>Log cleared</td><td>1102 (Security) or 104 (System / Application)</td></tr>
+    <tr><td>Privileged group change</td><td>A member added to Administrators, Domain Admins and similar groups</td></tr>
+    <tr><td>Suspicious service</td><td>A new service run from a user-writable folder (Temp, AppData, Public, ProgramData) or one that starts cmd, PowerShell, rundll32, mshta or a script</td></tr>
+    <tr><td>Execution</td><td>Encoded PowerShell, download cradles, known tools such as Mimikatz, AMSI bypass, shadow copy deletion</td></tr>
+  </table>
+  <p>Each finding is mapped to a MITRE ATT&amp;CK technique, which is how the attack-stage view is built.</p>
+  <h3>Limits</h3>
+  <p>The rules only see what was exported. Many attacks show up mainly in Sysmon or PowerShell (4104) logs, so include those when you can. Thresholds are deliberately simple; a quiet attacker can stay under them.</p>
+
+  <h2 id="signins">M365 Sign-in Review</h2>
+  <h3>Main rules</h3>
+  <table class="data">
+    <tr><th>Finding</th><th>When it fires</th></tr>
+    <tr><td>Impossible travel</td><td>Two accepted sign-ins for one user from countries at least 500 km apart, at a speed of 1,000 km/h or more</td></tr>
+    <tr><td>Password spraying</td><td>Bad-password failures against 5 or more accounts from one IP</td></tr>
+    <tr><td>Brute force</td><td>10 or more bad-password attempts against one account</td></tr>
+    <tr><td>MFA fatigue</td><td>3 or more MFA failures for a user; critical when a successful sign-in follows</td></tr>
+    <tr><td>Weak paths</td><td>Legacy protocols (IMAP, POP, SMTP, ActiveSync), ROPC, device code flow and scripted user agents</td></tr>
+    <tr><td>Outside home country</td><td>Successful sign-ins from a country other than the one you set, or the most common one in the export</td></tr>
+  </table>
+  <h3>Limits</h3>
+  <p>Distances use the coordinates in the export when present, otherwise a central point for each country, so travel speeds are estimates. VPNs and mobile networks cause false impossible-travel alerts; confirm with the user.</p>
+
+  <h2 id="ioc">IOC Extractor</h2>
+  <p>Finds IPv4 and IPv6 addresses, domains, URLs, email addresses, MD5, SHA-1 and SHA-256 hashes, CVEs, file names and paths, registry keys, ASNs and Bitcoin addresses, including defanged forms such as <code>hxxp</code>, <code>[.]</code>, <code>(dot)</code> and <code>(at)</code>. Domains must end in a real top-level domain from the IANA list, and log field names, version numbers and clock times are skipped. A name like <code>invoice.pdf</code> goes to the file list rather than the domain list; write it defanged (<code>invoice[.]pdf</code>) if you mean the host.</p>
+
+  <h2 id="posture">M365 Posture Scanner</h2>
+  <p>Signs in with delegated, read-only Microsoft Graph permissions and checks MFA coverage, admin roles, Conditional Access, legacy authentication, app consents, guests, stale and unlicensed accounts, licences and email domain security. Checks that need an Entra ID P1 or P2 licence the tenant doesn't have are marked <strong>not checked</strong> instead of guessed. Shared mailboxes and other unlicensed accounts are counted separately, so they don't skew the MFA figures. The permissions it asks for, and how to remove it, are listed in the <a href="../privacy/#scanner">privacy policy</a>.</p>
+
+  <h2 id="feedback">Found a wrong result?</h2>
+  <p>Email <strong>hello@opsvantage.net</strong> with what you expected and, if you can share it, a sanitised sample. Changes are listed in the <a href="../changelog/">changelog</a>.</p>
+</main>
+
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../">All tools</a> · <a href="../privacy/">Privacy &amp; terms</a> · <a href="../how-it-works/">How it works</a> · <a href="../changelog/">Changelog</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../assets/hub.js?v=20261107"></script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Changelog: What's New in OpsVantage Tools</title>
+<meta name="description" content="New features, fixes and improvements to the free OpsVantage SOC and email security tools, newest first.">
+<link rel="canonical" href="https://tools.opsvantage.net/changelog/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Changelog: What's New in OpsVantage Tools">
+<meta property="og:description" content="New features, fixes and improvements to the free OpsVantage SOC and email security tools, newest first.">
+<meta property="og:url" content="https://tools.opsvantage.net/changelog/">
+<meta property="og:image" content="https://tools.opsvantage.net/assets/media/home-og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://tools.opsvantage.net/assets/media/home-og.jpg">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../assets/logo.png">
+<script src="../assets/theme.js?v=20261107"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/hub.css?v=20261107">
+<style>
+  .doc{max-width:760px;padding-bottom:64px}
+  .doc h2{margin:34px 0 10px}
+  .doc h3{font-family:var(--display);font-size:1.02rem;margin:20px 0 6px}
+  .doc p,.doc li{color:var(--muted);font-size:.97rem}
+  .doc p{margin:8px 0}
+  .doc ul{margin:8px 0 8px 20px}
+  .doc li{margin:4px 0}
+  .doc strong{color:var(--text)}
+  .doc .toc{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  .doc table.data td:first-child{font-weight:600;color:var(--text);white-space:nowrap}
+  .doc table.data td{vertical-align:top}
+  .doc code{font-family:var(--mono);font-size:.86em}
+  .doc p a,.doc li a,.doc td a{color:var(--link)}
+</style>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../"><img src="../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../#tools">All tools</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap doc">
+  <div class="tool-head">
+    <div class="crumbs"><a href="../">Tools</a> / Changelog</div>
+    <h1>What's <em>new</em></h1>
+    <p class="lead">Changes to the tools on this site, newest first. The IOC Triage browser extension has its own <a href="https://github.com/kazisohan-cyber/soclens/blob/main/CHANGELOG.md">changelog on GitHub</a>.</p>
+  </div>
+
+  <h2 id="2026-11-06">6 November 2026</h2>
+  <h3>Easier to read</h3>
+  <ul>
+    <li>Charts in every tool: the route an email took with the delay at each hop, a DMARC grade gauge with the steps to <code>p=reject</code>, an SPF include tree with a lookup meter, an attack timeline and MITRE ATT&amp;CK stages for Windows events, a world map and weekday-by-hour heatmap for sign-ins, and an indicator breakdown for the IOC Extractor.</li>
+    <li>A short demo video on each tool page, and preview images when a page is shared on LinkedIn, Slack or chat.</li>
+    <li>"Save PDF report" in every tool, with a report header and only the results on the page.</li>
+    <li>Three quick tips the first time you open a tool.</li>
+    <li>A <a href="../how-it-works/">How it works</a> page: what each tool checks, how verdicts and scores are worked out, and the limits.</li>
+  </ul>
+  <h3>Easier to use</h3>
+  <ul>
+    <li>A "paste anything" box on the home page that recognises email headers, Windows events, Entra sign-in logs, domains and indicator lists, and opens the right tool.</li>
+    <li>"What to do now" steps at the top of every result.</li>
+    <li>Buttons to send results to the next tool, such as an email's indicators to the IOC Extractor.</li>
+    <li>Ctrl+Enter runs the analysis in every tool.</li>
+  </ul>
+  <h3>More capable</h3>
+  <ul>
+    <li>One-click lookups under every IP, domain, URL, hash and CVE: VirusTotal, AbuseIPDB, GreyNoise, Shodan, urlscan, crt.sh, MalwareBazaar, NVD, CISA KEV and others.</li>
+    <li>Email Header Analyzer reads a whole .eml: every link with its real destination (Safe Links unwrapped) and every attachment with its SHA-256. Brand impersonation from a domain that passes authentication is now at least suspicious.</li>
+    <li>Windows Event Triage accepts JSON and CSV exports from Microsoft Sentinel, Splunk and Elastic.</li>
+    <li>IOC Extractor finds file names and paths, registry keys, ASNs and Bitcoin addresses, and understands <code>(at)</code>-style defanged emails.</li>
+  </ul>
+  <h3>Accessibility and security</h3>
+  <ul>
+    <li>All pages pass automated WCAG 2.2 AA checks (axe-core) in both themes: stronger text contrast, visible keyboard focus, a skip link, underlined links in text and keyboard-scrollable code blocks.</li>
+    <li>A Content Security Policy on every page; no page runs inline scripts.</li>
+  </ul>
+
+  <h2 id="2026-11-05">5 November 2026</h2>
+  <ul>
+    <li>M365 Posture Scanner: live sign-in enabled. Shared mailboxes and other unlicensed accounts no longer skew the MFA and stale-account figures, and free licences no longer show as thousands of unused seats.</li>
+    <li>Five new guides: new admin account detection, Kerberoasting, malicious inbox rules, legacy authentication and MFA fatigue.</li>
+  </ul>
+</main>
+
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../">All tools</a> · <a href="../privacy/">Privacy &amp; terms</a> · <a href="../how-it-works/">How it works</a> · <a href="../changelog/">Changelog</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../assets/hub.js?v=20261107"></script>
+</body>
+</html>

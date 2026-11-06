@@ -32,6 +32,22 @@
     }
   }
 
+  // Keyboard users can scroll wide code blocks (WCAG: scrollable regions must be focusable).
+  var focusPre = function (root) { (root.querySelectorAll ? root : document).querySelectorAll('pre').forEach(function (p) { if (!p.hasAttribute('tabindex')) { p.tabIndex = 0; p.setAttribute('aria-label', 'Code block'); } }); };
+  focusPre(document);
+  if ('MutationObserver' in window && document.querySelector('main')) {
+    new MutationObserver(function (ms) { ms.forEach(function (m) { m.addedNodes.forEach(function (n) { if (n.nodeType === 1) { if (n.tagName === 'PRE') focusPre(n.parentNode); else focusPre(n); } }); }); })
+      .observe(document.querySelector('main'), { childList: true, subtree: true });
+  }
+  // "Skip to content" link for keyboard and screen-reader users.
+  var main = document.querySelector('main');
+  if (main && !document.querySelector('.skip')) {
+    if (!main.id) main.id = 'main';
+    var sk = document.createElement('a');
+    sk.className = 'skip'; sk.href = '#' + main.id; sk.textContent = 'Skip to content';
+    document.body.insertBefore(sk, document.body.firstChild);
+  }
+
   var y = document.getElementById('year');
   if (y) y.textContent = new Date().getFullYear();
 
@@ -193,6 +209,102 @@
     return TOOLS.ioc;
   }
 
-  window.OV = { toast: toast, copy: copy, download: download, esc: esc, csvCell: csvCell, parseCsv: parseCsv, pivots: pivots,
+  // ---------------------------------------------------------------- PDF report (browser print)
+  // Adds a "Save PDF report" button next to each tool's main copy button. It enables with that button,
+  // stamps a report header, names the file, and opens the browser's print dialog (Save as PDF).
+  function printReport() {
+    var h1 = document.querySelector('.tool-head h1');
+    var tool = h1 ? h1.textContent.trim() : document.title;
+    var now = new Date();
+    var stamp = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    var head = document.getElementById('print-head');
+    if (!head) { head = document.createElement('div'); head.id = 'print-head'; var m = document.querySelector('main'); m.insertBefore(head, m.firstChild); }
+    var by = '';
+    try { by = localStorage.getItem('ov.m365.brand') || ''; } catch (e) { /* storage blocked */ }
+    head.innerHTML = '<b>' + esc(tool) + ' report</b>' + esc(now.toLocaleString()) + (by ? ' · Prepared by ' + esc(by) : '') +
+      ' · Generated in the browser with tools.opsvantage.net. Nothing was uploaded.';
+    var old = document.title;
+    document.title = tool.replace(/[^\w &-]+/g, '').trim() + ' report ' + stamp;
+    var restore = function () { document.title = old; window.removeEventListener('afterprint', restore); };
+    window.addEventListener('afterprint', restore);
+    window.print();
+    setTimeout(restore, 1500);
+  }
+  function addPdfButton() {
+    if (document.getElementById('pdf-report')) return;
+    var anchor = document.getElementById('note') || document.getElementById('copy-all') || document.getElementById('copy-report');
+    if (!anchor) return;
+    var b = document.createElement('button');
+    b.type = 'button'; b.id = 'pdf-report'; b.className = 'btn btn-ghost btn-sm'; b.textContent = 'Save PDF report';
+    b.disabled = anchor.disabled;
+    anchor.parentNode.insertBefore(b, anchor.nextSibling);
+    b.addEventListener('click', printReport);
+    if ('MutationObserver' in window) new MutationObserver(function () { b.disabled = anchor.disabled; }).observe(anchor, { attributes: true, attributeFilter: ['disabled'] });
+  }
+  addPdfButton();
+  // The DMARC checker draws its copy button with the result, so look again when results change.
+  var res = document.getElementById('result');
+  if (res && 'MutationObserver' in window) new MutationObserver(addPdfButton).observe(res, { childList: true });
+
+  // ---------------------------------------------------------------- first-visit tour
+  // Three short tips on a tool page the first time it is opened (remembered per page in this browser).
+  // Skipped when data was handed over from another tool, or with ?tour=0.
+  var TOUR = [
+    { sel: '#input, #domain', t: 'Paste your data here, or drop a file on the box. It stays in this browser tab.' },
+    { sel: '#sample, #demo', t: 'Not sure what to paste? Load the sample to see a complete result first.' },
+    { sel: '#out, #result, #report, #connect', t: 'Results show up here: a verdict, what to do now, charts and one-click lookups. When you are done, save a PDF report.' }
+  ];
+  function startTour(force) {
+    var key = 'ov-tour:' + location.pathname;
+    var seen = false;
+    try { seen = !!localStorage.getItem(key); } catch (e) { return; }
+    if (!force && (seen || /[?&]tour=0/.test(location.search) || !document.querySelector('.tool-head'))) return;
+    var steps = TOUR.map(function (s) { return { el: document.querySelector(s.sel), t: s.t }; }).filter(function (s) { return s.el; });
+    if (steps.length < 2) return;
+    var i = 0, pop = document.createElement('div'), prevFocus = document.activeElement;
+    pop.style.top = (window.scrollY + 80) + 'px';
+    pop.className = 'tour'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', 'Quick tour'); pop.tabIndex = -1;
+    document.body.appendChild(pop);
+    var done = function () {
+      try { localStorage.setItem(key, '1'); } catch (e) { /* not remembered */ }
+      document.querySelectorAll('.tour-on').forEach(function (e) { e.classList.remove('tour-on'); });
+      pop.remove(); document.removeEventListener('keydown', onKey); window.removeEventListener('resize', place);
+      if (prevFocus && prevFocus.focus) prevFocus.focus();
+    };
+    function place() {
+      var r = steps[i].el.getBoundingClientRect(), w = Math.min(320, window.innerWidth - 24);
+      pop.style.width = w + 'px';
+      var top = r.bottom + window.scrollY + 10;
+      if (r.bottom + 170 > window.innerHeight && r.top > 190) top = r.top + window.scrollY - pop.offsetHeight - 10;
+      pop.style.top = Math.max(8, top) + 'px';
+      pop.style.left = Math.max(12, Math.min(r.left + window.scrollX, window.scrollX + window.innerWidth - w - 12)) + 'px';
+    }
+    function show() {
+      document.querySelectorAll('.tour-on').forEach(function (e) { e.classList.remove('tour-on'); });
+      var s = steps[i];
+      s.el.classList.add('tour-on');
+      pop.innerHTML = '<div class="tour-n">Tip ' + (i + 1) + ' of ' + steps.length + '</div><p>' + esc(s.t) + '</p><div class="tour-b">' +
+        '<button type="button" class="btn btn-ghost btn-sm" data-t="skip">Skip</button>' +
+        '<button type="button" class="btn btn-primary btn-sm" data-t="next">' + (i === steps.length - 1 ? 'Got it' : 'Next') + '</button></div>';
+      var r = s.el.getBoundingClientRect(), off = r.top < 70 || r.bottom > window.innerHeight - 40;
+      if (off) s.el.scrollIntoView({ block: 'center' });
+      place();
+      pop.querySelector('[data-t="next"]').focus({ preventScroll: true });
+    }
+    function onKey(e) { if (e.key === 'Escape') done(); }
+    pop.addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-t]');
+      if (!b) return;
+      if (b.dataset.t === 'skip' || i === steps.length - 1) done(); else { i++; show(); }
+    });
+    document.addEventListener('keydown', onKey);
+    window.addEventListener('resize', place);
+    show();
+  }
+  var handedOver = false;
+  try { var hh = sessionStorage.getItem(HKEY); handedOver = !!hh && location.pathname.indexOf(JSON.parse(hh).to) >= 0; } catch (e) { /* ignore */ }
+  if (!handedOver) setTimeout(function () { startTour(false); }, 900);
+
+  window.OV = { startTour: startTour, toast: toast, copy: copy, download: download, esc: esc, csvCell: csvCell, parseCsv: parseCsv, pivots: pivots,
     sendTo: sendTo, takeHandoff: takeHandoff, ctrlEnter: ctrlEnter, nextSteps: nextSteps, detect: detect, TOOLS: TOOLS };
 })();

@@ -131,7 +131,7 @@
       (by ? '<p class="sub" style="margin-top:2px">Prepared by <b style="color:var(--text)">' + esc(by) + '</b></p>' : '') + '</div>' +
       '<div class="grade-box"><div class="grade ' + S.grade + '">' + S.grade + '</div><div class="mono" style="text-align:center;margin-top:6px">' + S.score + '/100</div></div></div>' +
       '<div class="stats" style="margin-top:16px">' +
-      '<div class="stat"><b style="color:#ef4444">' + count('fail') + '</b><span>failed</span></div>' +
+      '<div class="stat"><b style="color:var(--bad)">' + count('fail') + '</b><span>failed</span></div>' +
       '<div class="stat"><b style="color:var(--amber)">' + count('warn') + '</b><span>warnings</span></div>' +
       '<div class="stat"><b style="color:var(--live)">' + count('pass') + '</b><span>passed</span></div>' +
       '<div class="stat"><b>' + count('na') + '</b><span>not checked</span></div>' +

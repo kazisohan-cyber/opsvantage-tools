@@ -8,11 +8,11 @@
 <link rel="canonical" href="https://tools.opsvantage.net/privacy/">
 <meta name="theme-color" content="#0A0D18">
 <link rel="icon" type="image/png" href="../assets/logo.png">
-<script src="../assets/theme.js"></script>
+<script src="../assets/theme.js?v=20261107"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../assets/hub.css">
+<link rel="stylesheet" href="../assets/hub.css?v=20261107">
 <style>
   .doc{max-width:760px;padding-bottom:64px}
   .doc h2{margin:34px 0 10px}
@@ -44,7 +44,7 @@
   <div class="tool-head">
     <div class="crumbs"><a href="../">Tools</a> / Privacy &amp; terms</div>
     <h1>Privacy policy <em>&amp; terms</em></h1>
-    <p class="lead">Last updated 2 November 2026. Plain language first: the tools process your data in your browser, OpsVantage does not run a server that receives it, and we do not sell or share anything.</p>
+    <p class="lead">Last updated 6 November 2026. Plain language first: the tools process your data in your browser, OpsVantage does not run a server that receives it, and we do not sell or share anything.</p>
     <div class="toc"><a class="btn btn-ghost btn-sm" href="#privacy">Privacy policy</a><a class="btn btn-ghost btn-sm" href="#scanner">M365 Posture Scanner</a><a class="btn btn-ghost btn-sm" href="#terms">Terms of use</a></div>
   </div>
 
@@ -58,13 +58,15 @@
   <ul>
     <li><strong>SPF, DKIM &amp; DMARC Checker</strong>: the domain names you check are looked up directly from your browser through Cloudflare's public DNS resolver (1.1.1.1), falling back to Google Public DNS. Those providers receive the DNS queries under their own privacy policies. We do not.</li>
     <li><strong>M365 Posture Scanner</strong>: talks directly to Microsoft. See the section below.</li>
+    <li><strong>Lookup links</strong>: the buttons under an indicator (VirusTotal, AbuseIPDB, urlscan and others) open that service in a new tab with the indicator in the address. That service receives it under its own privacy policy. Nothing is sent unless you click one.</li>
+    <li><strong>Demo videos</strong> are files on this site; they load only when you scroll to them.</li>
   </ul>
 
   <h3>What is stored in your browser</h3>
-  <p>We set no cookies. The site stores two small preferences in your browser's local storage: your light or dark theme choice, and, if you type one, the "Prepared by" name for scanner reports. During a Microsoft sign-in, a one-time code verifier is held in session storage and deleted as soon as you return.</p>
+  <p>We set no cookies. In your browser's local storage the site keeps your light or dark theme choice, the "Prepared by" name for reports if you type one, and a note of which tool pages have already shown you the three quick tips. When you send results from one tool to another, the text is held in this tab's session storage, read once by the next tool and deleted (it also expires after five minutes). During a Microsoft sign-in, a one-time code verifier is held in session storage and deleted as soon as you return.</p>
 
   <h3>Hosting, fonts and analytics</h3>
-  <p>The site is hosted on <strong>Cloudflare Pages</strong>. Like any web host, Cloudflare processes connection data such as your IP address and browser type to deliver the pages and protect them from attacks, and may count anonymous, cookie-free page views (Cloudflare Web Analytics). Fonts are loaded from <strong>Google Fonts</strong>, which receives your IP address when the fonts download. The M365 Posture Scanner page blocks all third-party scripts with a strict Content Security Policy.</p>
+  <p>The site is hosted on <strong>Cloudflare Pages</strong>. Like any web host, Cloudflare processes connection data such as your IP address and browser type to deliver the pages and protect them from attacks, and may count anonymous, cookie-free page views (Cloudflare Web Analytics). Fonts are loaded from <strong>Google Fonts</strong>, which receives your IP address when the fonts download. Every page has a Content Security Policy that only allows scripts from this site and Cloudflare's analytics; the M365 Posture Scanner page blocks all third-party scripts, analytics included.</p>
 
   <h3>What we do not do</h3>
   <ul>
@@ -114,9 +116,9 @@
 <footer>
   <div class="wrap row">
     <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
-    <span><a href="../">All tools</a> · <a href="../privacy/">Privacy &amp; terms</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+    <span><a href="../">All tools</a> · <a href="../privacy/">Privacy &amp; terms</a> · <a href="../how-it-works/">How it works</a> · <a href="../changelog/">Changelog</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
   </div>
 </footer>
-<script src="../assets/hub.js"></script>
+<script src="../assets/hub.js?v=20261107"></script>
 </body>
 </html>

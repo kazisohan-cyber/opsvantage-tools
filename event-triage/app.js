@@ -409,7 +409,7 @@
     var html = '<div class="stats">' +
       '<div class="stat"><b>' + events.length + '</b><span>events</span></div>' +
       '<div class="stat"><b>' + uniq(events.map(function (e) { return e.computer; })).length + '</b><span>hosts</span></div>' +
-      '<div class="stat"><b style="color:#ef4444">' + (count('crit') + count('high')) + '</b><span>critical / high</span></div>' +
+      '<div class="stat"><b style="color:var(--bad)">' + (count('crit') + count('high')) + '</b><span>critical / high</span></div>' +
       '<div class="stat"><b style="color:var(--amber)">' + count('med') + '</b><span>medium</span></div></div>';
     if (last.from) html += '<p class="sub" style="margin:-4px 0 12px;font-size:.82rem">' + fmtTime(last.from) + ' → ' + fmtTime(last.to) + '</p>';
     html += eventSteps(findings);

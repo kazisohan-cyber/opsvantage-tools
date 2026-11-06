@@ -302,7 +302,7 @@
       '<div class="stat"><b>' + L.length + '</b><span>sign-ins</span></div>' +
       '<div class="stat"><b>' + uniq(L.map(us)).length + '</b><span>users</span></div>' +
       '<div class="stat"><b>' + Math.round(okN / L.length * 100) + '%</b><span>successful</span></div>' +
-      '<div class="stat"><b style="color:#ef4444">' + (cnt('crit') + cnt('high')) + '</b><span>critical / high</span></div></div>';
+      '<div class="stat"><b style="color:var(--bad)">' + (cnt('crit') + cnt('high')) + '</b><span>critical / high</span></div></div>';
     if (times.length) html += '<p class="sub" style="margin:-4px 0 12px;font-size:.82rem">' + fmt(last.from) + ' → ' + fmt(last.to) + (home ? ' · home country ' + home + (homeIn ? '' : ' (auto)') : '') + '</p>';
     html += signinSteps(findings);
     html += signinViz(L, findings);

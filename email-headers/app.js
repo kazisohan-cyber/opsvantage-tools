@@ -175,7 +175,7 @@
     if (b.attachments.length) {
       h += H3('Attachments', b.attachments.length) + '<ul class="ioc-list">' + b.attachments.map(function (a) {
         return '<li><span class="ioc-v"><span>' + OV.esc(a.name) + ' <span class="sub">' + OV.esc(a.type || '') + ' · ' + fmtSize(a.size) + '</span></span>' +
-          (a.flags.length ? '<span class="sub" style="color:#ef4444;white-space:normal">' + OV.esc(a.flags.join('; ')) + '</span>' : '') +
+          (a.flags.length ? '<span class="sub" style="color:var(--bad);white-space:normal">' + OV.esc(a.flags.join('; ')) + '</span>' : '') +
           '<span class="sub" style="white-space:normal;word-break:break-all">SHA-256 ' + OV.esc(a.sha256) + '</span>' + OV.pivots('sha256', a.sha256) +
           '</span><button class="copy" type="button" data-value="' + OV.esc(a.sha256) + '">Copy hash</button></li>';
       }).join('') + '</ul>';
@@ -189,7 +189,7 @@
         if (u.reasons.length) warn.push(u.reasons.join('; '));
         var bad = u.mismatch || u.level === 'block' || u.level === 'warn';
         return '<li><span class="ioc-v"><span>' + OV.esc(I.defang(u.real, 'url')) + '</span>' +
-          (warn.length ? '<span class="sub" style="white-space:normal;' + (bad ? 'color:#ef4444' : '') + '">' + OV.esc(warn.join(' · ')) + '</span>' : '') +
+          (warn.length ? '<span class="sub" style="white-space:normal;' + (bad ? 'color:var(--bad)' : '') + '">' + OV.esc(warn.join(' · ')) + '</span>' : '') +
           OV.pivots('url', u.real) + '</span><button class="copy" type="button" data-value="' + OV.esc(u.real) + '">Copy</button></li>';
       }).join('') + '</ul>' + (urls.length > 40 ? '<p class="sub">…and ' + (urls.length - 40) + ' more.</p>' : '');
     }
