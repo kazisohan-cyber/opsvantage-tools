@@ -33,10 +33,10 @@
   }
 
   // Keyboard users can scroll wide code blocks (WCAG: scrollable regions must be focusable).
-  var focusPre = function (root) { (root.querySelectorAll ? root : document).querySelectorAll('pre').forEach(function (p) { if (!p.hasAttribute('tabindex')) { p.tabIndex = 0; p.setAttribute('aria-label', 'Code block'); } }); };
+  var focusPre = function (root) { (root.querySelectorAll ? root : document).querySelectorAll('pre, .path').forEach(function (p) { if (!p.hasAttribute('tabindex')) { p.tabIndex = 0; if (!p.hasAttribute('aria-label')) p.setAttribute('aria-label', 'Code block'); } }); };
   focusPre(document);
   if ('MutationObserver' in window && document.querySelector('main')) {
-    new MutationObserver(function (ms) { ms.forEach(function (m) { m.addedNodes.forEach(function (n) { if (n.nodeType === 1) { if (n.tagName === 'PRE') focusPre(n.parentNode); else focusPre(n); } }); }); })
+    new MutationObserver(function (ms) { ms.forEach(function (m) { m.addedNodes.forEach(function (n) { if (n.nodeType === 1) { if (n.tagName === 'PRE' || (n.classList && n.classList.contains('path'))) focusPre(n.parentNode); else focusPre(n); } }); }); })
       .observe(document.querySelector('main'), { childList: true, subtree: true });
   }
   // "Skip to content" link for keyboard and screen-reader users.

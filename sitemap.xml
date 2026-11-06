@@ -68,4 +68,5 @@
   <url><loc>https://tools.opsvantage.net/guides/ioc-hunting-queries-kql-splunk/</loc><lastmod>2026-11-06</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://tools.opsvantage.net/guides/prioritize-cves-kev-epss/</loc><lastmod>2026-11-06</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://tools.opsvantage.net/guides/decode-entra-access-token/</loc><lastmod>2026-11-06</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://tools.opsvantage.net/embed/</loc><lastmod>2026-11-07</lastmod></url>
 </urlset>

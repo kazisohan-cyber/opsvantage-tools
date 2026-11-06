@@ -6,12 +6,12 @@
 <title>SPF, DKIM &amp; DMARC Checker (embed) | OpsVantage Tools</title>
 <meta name="robots" content="noindex">
 <link rel="canonical" href="https://tools.opsvantage.net/dmarc-checker/">
-<script src="../../assets/theme.js"></script>
-<link rel="stylesheet" href="../../assets/hub.css">
+<script src="../../assets/theme.js?v=202611070706"></script>
+<link rel="stylesheet" href="../../assets/hub.css?v=202611070706">
 <style>
   body{background:var(--surface);padding:14px}
   .e-wrap{max-width:640px;margin:0 auto}
-  .e-h{font-family:var(--display);font-size:1rem;margin-bottom:8px}
+  .e-h{font-family:var(--display);font-size:1rem;font-weight:700;margin:0 0 8px;letter-spacing:0}
   .e-form{display:flex;gap:8px}
   .e-form input{flex:1;min-width:0}
   .e-top{display:flex;gap:14px;align-items:center;margin-top:14px}
@@ -23,7 +23,7 @@
 </head>
 <body>
 <main class="e-wrap" id="main">
-  <div class="e-h">Can this domain be spoofed?</div>
+  <h1 class="e-h">Can this domain be spoofed?</h1>
   <form class="e-form" id="f" autocomplete="off">
     <label for="d" style="position:absolute;left:-9999px">Domain</label>
     <input class="input" id="d" placeholder="example.com" spellcheck="false" inputmode="url">
@@ -32,8 +32,8 @@
   <div id="res" aria-live="polite"><p class="empty">Enter a domain to get an SPF, DKIM and DMARC grade.</p></div>
   <p class="e-foot">Checked in your browser through public DNS. Free tool by <a href="https://tools.opsvantage.net/" target="_blank" rel="noopener">OpsVantage Tools</a>.</p>
 </main>
-<script src="../../assets/lib/mailauth.js"></script>
-<script src="../../assets/charts.js"></script>
-<script src="embed.js"></script>
+<script src="../../assets/lib/mailauth.js?v=202611070706"></script>
+<script src="../../assets/charts.js?v=202611070706"></script>
+<script src="embed.js?v=202611070706"></script>
 </body>
 </html>
