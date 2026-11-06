@@ -12,6 +12,26 @@
     root.setAttribute('data-theme', next);
     try { localStorage.setItem('ov-theme', next); } catch (err) { /* storage blocked: theme still applies for this visit */ }
   });
+  // Demo videos load only when scrolled near, play muted while visible and pause off-screen.
+  // With reduced motion they get controls and never start on their own.
+  var vids = document.querySelectorAll('video.demo-video[data-src]');
+  if (vids.length) {
+    var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var load = function (v) { if (!v.src) { v.src = v.dataset.src; v.load(); } };
+    // preload="none" keeps the file from downloading until the viewer presses play.
+    if (still || !('IntersectionObserver' in window)) vids.forEach(function (v) { v.controls = true; v.preload = 'none'; v.src = v.dataset.src; });
+    else {
+      var io = new IntersectionObserver(function (es) {
+        es.forEach(function (e) {
+          var v = e.target;
+          if (e.isIntersecting) { load(v); var p = v.play(); if (p && p.catch) p.catch(function () { v.controls = true; }); }
+          else if (!v.paused) v.pause();
+        });
+      }, { rootMargin: '200px 0px', threshold: 0.25 });
+      vids.forEach(function (v) { io.observe(v); v.addEventListener('click', function () { if (v.paused) v.play(); else v.pause(); }); });
+    }
+  }
+
   var y = document.getElementById('year');
   if (y) y.textContent = new Date().getFullYear();
 
