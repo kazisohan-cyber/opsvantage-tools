@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Defender Event ID 5007: Defender configuration changed | OpsVantage Tools</title>
+<meta name="description" content="What Defender Event ID 5007 (defender configuration changed) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.">
+<link rel="canonical" href="https://tools.opsvantage.net/events/defender-5007/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../../assets/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Defender Event ID 5007: Defender configuration changed">
+<meta property="og:description" content="What Defender Event ID 5007 (defender configuration changed) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.">
+<meta property="og:url" content="https://tools.opsvantage.net/events/defender-5007/">
+<meta property="og:image" content="https://tools.opsvantage.net/assets/media/home-og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://tools.opsvantage.net/assets/media/home-og.jpg">
+<script src="../../assets/theme.js?v=202611081844"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/hub.css?v=202611081844">
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Defender Event ID 5007: Defender configuration changed",
+    "description": "What Defender Event ID 5007 (defender configuration changed) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.",
+    "url": "https://tools.opsvantage.net/events/defender-5007/",
+    "dateModified": "2026-11-08",
+    "inLanguage": "en",
+    "author": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "How do I see which Defender exclusions are set?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Run Get-MpPreference | Select-Object Exclusion* as an administrator. If exclusions are hidden from local admins by policy, check the policy in Intune or Group Policy instead."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is the difference between Event ID 5007 and 5001?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "5001 says real-time protection was turned off. 5007 records any configuration change, including the quieter ones such as exclusions, so it catches more."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can tamper protection stop these changes?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Tamper protection blocks local changes to many protection settings, but exclusions added by an administrator can still be allowed depending on configuration. Watching 5007 covers the gap."
+        }
+      }
+    ]
+  }
+]
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../../"><img src="../../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../../#tools">Tools</a>
+      <a class="link opt" href="../../guides/">Guides</a>
+      <a class="link opt" href="../../events/">Event IDs</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <article class="article">
+    <div class="tool-head">
+      <div class="crumbs"><a href="../../">Tools</a> / <a href="../">Event IDs</a> / Defender Event ID 5007</div>
+      <h1>Defender Event ID 5007: <em>defender configuration changed</em></h1>
+      <p class="lead">What Defender Event ID 5007 (defender configuration changed) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.</p>
+      <div class="meta-line">Log: Microsoft-Windows-Windows Defender/Operational · Severity: Medium · MITRE ATT&amp;CK <a href="https://attack.mitre.org/techniques/T1562/001/" rel="noopener">T1562.001</a> · Updated 2026-11-08</div>
+    </div>
+<p>Microsoft Defender Event ID 5007 says the antimalware platform configuration changed, with the old and new value of the setting. Most of these are Defender updating itself or a policy arriving from Intune or Group Policy. The ones that matter are new exclusions and protection features being switched off, because adding an exclusion for a folder is the quiet way to make Defender ignore a payload instead of disabling it outright.</p>
+<section class="demo-block" style="margin:22px 0 8px">
+  <video class="demo-video" muted loop playsinline preload="none" width="960" height="540" poster="../../assets/media/events/defender-5007.jpg" data-src="../../assets/media/events/defender-5007.mp4" aria-label="Defender Event ID 5007 explained in 15 seconds: a sample event, the fields to check and when to worry. No sound."></video>
+</section>
+
+
+<h2>The fields that matter</h2>
+<div class="table-wrap"><table>
+  <tr><th>Field</th><th>What it tells you</th></tr>
+  <tr><td>Old Value</td><td>The registry path and previous value of the setting, or empty if it is new.</td></tr>
+  <tr><td>New Value</td><td>The path and new value, for example <code>HKLM\SOFTWARE\Microsoft\Windows Defender\Exclusions\Paths\C:\Users\Public = 0x0</code>.</td></tr>
+  <tr><td>Product Version</td><td>The Defender platform version, useful when a change follows an update.</td></tr>
+</table></div>
+
+<h2>What is normal</h2>
+<p>Signature and platform updates, Intune or Group Policy settings arriving (paths under <code>SOFTWARE\Policies\Microsoft\Windows Defender</code>), and exclusions documented for backup, database or line-of-business software.</p>
+
+<h2>When Defender Event ID 5007 is suspicious</h2>
+<ul>
+  <li>A new path under <code>Exclusions\Paths</code>, <code>Exclusions\Processes</code> or <code>Exclusions\Extensions</code> that nobody documented, especially user-writable folders (<code>C:\Users\Public</code>, <code>AppData</code>, <code>Temp</code>, <code>ProgramData</code>) or whole drives.</li>
+  <li>Exclusions for script extensions (<code>.ps1</code>, <code>.bat</code>, <code>.vbs</code>) or for <code>powershell.exe</code> or <code>rundll32.exe</code>.</li>
+  <li><code>DisableRealtimeMonitoring</code>, <code>DisableBehaviorMonitoring</code>, <code>DisableIOAVProtection</code> or <code>DisableScriptScanning</code> set to 1.</li>
+  <li>Changes made outside your management policy path, which points to someone running <code>Set-MpPreference</code> or <code>Add-MpPreference</code> on the machine.</li>
+</ul>
+<div class="callout"><p><strong>Common false positive:</strong> Vendor-recommended exclusions for SQL Server, Exchange or backup software. Record them in your policy so a new local exclusion stands out.</p></div>
+
+<h2>Find Defender Event ID 5007 with PowerShell</h2>
+<pre><code>Get-WinEvent -FilterHashtable @{LogName='Microsoft-Windows-Windows Defender/Operational'; Id=5007; StartTime=(Get-Date).AddDays(-7)} -MaxEvents 50 |
+  ForEach-Object {
+    $d = [ordered]@{ Time = $_.TimeCreated; Computer = $_.MachineName }
+    ([xml]$_.ToXml()).Event.EventData.Data | ForEach-Object { $d[$_.Name] = $_.'#text' }
+    [pscustomobject]$d
+  } | Format-List</code></pre>
+<h3>Microsoft Sentinel (KQL)</h3>
+<pre><code>Event
+| where TimeGenerated &gt; ago(7d) and EventLog == &quot;Microsoft-Windows-Windows Defender/Operational&quot; and EventID == 5007
+| project TimeGenerated, Computer, RenderedDescription, EventData
+| order by TimeGenerated desc</code></pre>
+
+<h2>Related events</h2>
+<ul>
+<li><a href="../defender-5001/">Defender Event ID 5001</a>: Defender real-time protection disabled</li>
+<li><a href="../defender-1116/">Defender Event ID 1116</a>: Defender detected malware</li>
+<li><a href="../system-7040/">System Event ID 7040</a>: Service start type changed</li>
+<li><a href="../powershell-4104/">PowerShell Event ID 4104</a>: PowerShell script block logged</li>
+</ul>
+
+<h2>FAQ</h2>
+<h3>How do I see which Defender exclusions are set?</h3>
+<p>Run <code>Get-MpPreference | Select-Object Exclusion*</code> as an administrator. If exclusions are hidden from local admins by policy, check the policy in Intune or Group Policy instead.</p>
+<h3>What is the difference between Event ID 5007 and 5001?</h3>
+<p>5001 says real-time protection was turned off. 5007 records any configuration change, including the quieter ones such as exclusions, so it catches more.</p>
+<h3>Can tamper protection stop these changes?</h3>
+<p>Tamper protection blocks local changes to many protection settings, but exclusions added by an administrator can still be allowed depending on configuration. Watching 5007 covers the gap.</p>
+    <div class="next">
+      <div><b>Have an export full of these events?</b><p>Windows Event Triage reads a CSV, EVTX-to-JSON or XML export in your browser and flags brute force, new admins, suspicious services and log clearing.</p></div>
+      <a class="btn btn-primary" href="../../event-triage/">Open Event Triage</a>
+    </div>
+    <div class="next">
+      <div><b>Found an IP, domain or hash in the event?</b><p>IOC Triage, our free browser extension: right-click it for a verdict from 15 threat-intel sources, then copy a ready ticket note.</p></div>
+      <a class="btn btn-ghost" href="https://chromewebstore.google.com/detail/dncgneacahomieionjkaofmfnojlkfmc?utm_source=tools.opsvantage.net&amp;utm_medium=events&amp;utm_campaign=event-defender-5007">Add IOC Triage to Chrome</a>
+    </div>
+  </article>
+</main>
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../../">All tools</a> · <a href="../../guides/">Guides</a> · <a href="../../privacy/">Privacy &amp; terms</a> · <a href="../../how-it-works/">How it works</a> · <a href="../../changelog/">Changelog</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../../assets/hub.js?v=202611081844"></script>
+</body>
+</html>

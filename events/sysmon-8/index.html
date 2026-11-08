@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sysmon Event ID 8: CreateRemoteThread | OpsVantage Tools</title>
+<meta name="description" content="What Sysmon Event ID 8 (createremotethread) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.">
+<link rel="canonical" href="https://tools.opsvantage.net/events/sysmon-8/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../../assets/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Sysmon Event ID 8: CreateRemoteThread">
+<meta property="og:description" content="What Sysmon Event ID 8 (createremotethread) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.">
+<meta property="og:url" content="https://tools.opsvantage.net/events/sysmon-8/">
+<meta property="og:image" content="https://tools.opsvantage.net/assets/media/home-og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://tools.opsvantage.net/assets/media/home-og.jpg">
+<script src="../../assets/theme.js?v=202611081844"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/hub.css?v=202611081844">
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Sysmon Event ID 8: CreateRemoteThread",
+    "description": "What Sysmon Event ID 8 (createremotethread) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.",
+    "url": "https://tools.opsvantage.net/events/sysmon-8/",
+    "dateModified": "2026-11-08",
+    "inLanguage": "en",
+    "author": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Does Sysmon log every kind of process injection?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. Event 8 only covers CreateRemoteThread. Other techniques, such as APC injection or process hollowing, need Sysmon 10 (process access) or an EDR to see."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Why is StartModule empty?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The thread starts in memory that is not mapped to a file, which normally means injected code. Legitimate threads almost always start inside a DLL."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What should I do after a suspicious Sysmon Event ID 8?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Look at the source process's Sysmon 1 event (parent and command line), the target's network activity, and isolate the host if the target is lsass.exe."
+        }
+      }
+    ]
+  }
+]
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../../"><img src="../../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../../#tools">Tools</a>
+      <a class="link opt" href="../../guides/">Guides</a>
+      <a class="link opt" href="../../events/">Event IDs</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <article class="article">
+    <div class="tool-head">
+      <div class="crumbs"><a href="../../">Tools</a> / <a href="../">Event IDs</a> / Sysmon Event ID 8</div>
+      <h1>Sysmon Event ID 8: <em>createremotethread</em></h1>
+      <p class="lead">What Sysmon Event ID 8 (createremotethread) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.</p>
+      <div class="meta-line">Log: Microsoft-Windows-Sysmon/Operational · Severity: Medium · MITRE ATT&amp;CK <a href="https://attack.mitre.org/techniques/T1055/" rel="noopener">T1055</a> · Updated 2026-11-08</div>
+    </div>
+<p>Sysmon Event ID 8 records CreateRemoteThread: one process starting a thread inside another process. That is the textbook way to inject code, so it is a strong signal when the source is something like PowerShell, an Office app or a binary from a temp folder, and the target is lsass.exe, explorer.exe or a svchost. Most Sysmon configurations exclude the handful of system and security processes that do this legitimately, which leaves a fairly quiet event.</p>
+<section class="demo-block" style="margin:22px 0 8px">
+  <video class="demo-video" muted loop playsinline preload="none" width="960" height="540" poster="../../assets/media/events/sysmon-8.jpg" data-src="../../assets/media/events/sysmon-8.mp4" aria-label="Sysmon Event ID 8 explained in 15 seconds: a sample event, the fields to check and when to worry. No sound."></video>
+</section>
+
+
+<h2>The fields that matter</h2>
+<div class="table-wrap"><table>
+  <tr><th>Field</th><th>What it tells you</th></tr>
+  <tr><td>SourceImage</td><td>The process that created the thread.</td></tr>
+  <tr><td>TargetImage</td><td>The process the thread was created in.</td></tr>
+  <tr><td>StartAddress / StartModule</td><td>Where the new thread begins. An empty StartModule means the code is not backed by a file on disk: injected shellcode.</td></tr>
+  <tr><td>StartFunction</td><td><code>LoadLibraryA</code> or <code>LoadLibraryW</code> is classic DLL injection.</td></tr>
+  <tr><td>SourceProcessGuid / TargetProcessGuid</td><td>Link to Sysmon 1 events to see how each process was started.</td></tr>
+</table></div>
+
+<h2>What is normal</h2>
+<p><code>csrss.exe</code> and <code>wininit.exe</code> creating threads in other processes, debuggers, and security products. A tuned Sysmon config usually filters these out.</p>
+
+<h2>When Sysmon Event ID 8 is suspicious</h2>
+<ul>
+  <li>SourceImage is <code>powershell.exe</code>, <code>rundll32.exe</code>, <code>regsvr32.exe</code>, <code>mshta.exe</code>, an Office application or anything in a user-writable folder.</li>
+  <li>TargetImage is <code>lsass.exe</code> (credential theft), <code>explorer.exe</code>, <code>svchost.exe</code> or a browser.</li>
+  <li>StartModule empty, or StartFunction <code>LoadLibraryA</code>/<code>LoadLibraryW</code> from an unusual source.</li>
+  <li>Followed by network connections (Sysmon 3) from the target process to an address it never talked to before.</li>
+</ul>
+<div class="callout"><p><strong>Common false positive:</strong> Accessibility tools, game anti-cheat, older antivirus and some monitoring agents inject legitimately. Exclude them by full path and signer, not by name.</p></div>
+
+<h2>Find Sysmon Event ID 8 with PowerShell</h2>
+<pre><code>Get-WinEvent -FilterHashtable @{LogName='Microsoft-Windows-Sysmon/Operational'; Id=8; StartTime=(Get-Date).AddDays(-7)} -MaxEvents 50 |
+  ForEach-Object {
+    $d = [ordered]@{ Time = $_.TimeCreated; Computer = $_.MachineName }
+    ([xml]$_.ToXml()).Event.EventData.Data | ForEach-Object { $d[$_.Name] = $_.'#text' }
+    [pscustomobject]$d
+  } | Format-List</code></pre>
+<h3>Microsoft Sentinel (KQL)</h3>
+<pre><code>Event
+| where TimeGenerated &gt; ago(7d) and Source == &quot;Microsoft-Windows-Sysmon&quot; and EventID == 8
+| project TimeGenerated, Computer, RenderedDescription, EventData
+| order by TimeGenerated desc</code></pre>
+
+<h2>Related events</h2>
+<ul>
+<li><a href="../sysmon-10/">Sysmon Event ID 10</a>: process access</li>
+<li><a href="../sysmon-1/">Sysmon Event ID 1</a>: process creation</li>
+<li><a href="../sysmon-3/">Sysmon Event ID 3</a>: network connection</li>
+<li><a href="../sysmon-7/">Sysmon Event ID 7</a>: image loaded</li>
+</ul>
+
+<h2>FAQ</h2>
+<h3>Does Sysmon log every kind of process injection?</h3>
+<p>No. Event 8 only covers CreateRemoteThread. Other techniques, such as APC injection or process hollowing, need Sysmon 10 (process access) or an EDR to see.</p>
+<h3>Why is StartModule empty?</h3>
+<p>The thread starts in memory that is not mapped to a file, which normally means injected code. Legitimate threads almost always start inside a DLL.</p>
+<h3>What should I do after a suspicious Sysmon Event ID 8?</h3>
+<p>Look at the source process's Sysmon 1 event (parent and command line), the target's network activity, and isolate the host if the target is lsass.exe.</p>
+    <div class="next">
+      <div><b>Have an export full of these events?</b><p>Windows Event Triage reads a CSV, EVTX-to-JSON or XML export in your browser and flags brute force, new admins, suspicious services and log clearing.</p></div>
+      <a class="btn btn-primary" href="../../event-triage/">Open Event Triage</a>
+    </div>
+    <div class="next">
+      <div><b>Found an IP, domain or hash in the event?</b><p>IOC Triage, our free browser extension: right-click it for a verdict from 15 threat-intel sources, then copy a ready ticket note.</p></div>
+      <a class="btn btn-ghost" href="https://chromewebstore.google.com/detail/dncgneacahomieionjkaofmfnojlkfmc?utm_source=tools.opsvantage.net&amp;utm_medium=events&amp;utm_campaign=event-sysmon-8">Add IOC Triage to Chrome</a>
+    </div>
+  </article>
+</main>
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../../">All tools</a> · <a href="../../guides/">Guides</a> · <a href="../../privacy/">Privacy &amp; terms</a> · <a href="../../how-it-works/">How it works</a> · <a href="../../changelog/">Changelog</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../../assets/hub.js?v=202611081844"></script>
+</body>
+</html>

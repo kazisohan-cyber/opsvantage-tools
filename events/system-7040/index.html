@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>System Event ID 7040: Service start type changed | OpsVantage Tools</title>
+<meta name="description" content="What System Event ID 7040 (service start type changed) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.">
+<link rel="canonical" href="https://tools.opsvantage.net/events/system-7040/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../../assets/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="System Event ID 7040: Service start type changed">
+<meta property="og:description" content="What System Event ID 7040 (service start type changed) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.">
+<meta property="og:url" content="https://tools.opsvantage.net/events/system-7040/">
+<meta property="og:image" content="https://tools.opsvantage.net/assets/media/home-og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://tools.opsvantage.net/assets/media/home-og.jpg">
+<script src="../../assets/theme.js?v=202611081844"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/hub.css?v=202611081844">
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "System Event ID 7040: Service start type changed",
+    "description": "What System Event ID 7040 (service start type changed) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.",
+    "url": "https://tools.opsvantage.net/events/system-7040/",
+    "dateModified": "2026-11-08",
+    "inLanguage": "en",
+    "author": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Why is Event ID 7040 so noisy?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Windows Update and BITS change their own start types routinely. Filter on param4 for the services you care about instead of alerting on every 7040."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does Event ID 7040 mean the service was stopped?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No, only its start type changed. A stop is logged as 7036. Attackers usually do both, and the service stays off after a reboot."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Which services should I watch for in Event ID 7040?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Defender (WinDefend, WdNisSvc, Sense), your EDR agent, VSS, wbengine, EventLog, backup agents and remote management tools you rely on for response."
+        }
+      }
+    ]
+  }
+]
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../../"><img src="../../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../../#tools">Tools</a>
+      <a class="link opt" href="../../guides/">Guides</a>
+      <a class="link opt" href="../../events/">Event IDs</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <article class="article">
+    <div class="tool-head">
+      <div class="crumbs"><a href="../../">Tools</a> / <a href="../">Event IDs</a> / System Event ID 7040</div>
+      <h1>System Event ID 7040: <em>service start type changed</em></h1>
+      <p class="lead">What System Event ID 7040 (service start type changed) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.</p>
+      <div class="meta-line">Log: System · Severity: Low · MITRE ATT&amp;CK <a href="https://attack.mitre.org/techniques/T1562/001/" rel="noopener">T1562.001</a> · Updated 2026-11-08</div>
+    </div>
+<p>System Event ID 7040, from the Service Control Manager, records that a service's start type changed, for example from automatic to disabled. Windows does this to its own services all the time, so most 7040s are noise. The ones to catch are security, backup and recovery services being set to disabled, a step most ransomware crews take before encryption so that Defender, the EDR agent and Volume Shadow Copies don't get in the way.</p>
+<section class="demo-block" style="margin:22px 0 8px">
+  <video class="demo-video" muted loop playsinline preload="none" width="960" height="540" poster="../../assets/media/events/system-7040.jpg" data-src="../../assets/media/events/system-7040.mp4" aria-label="System Event ID 7040 explained in 15 seconds: a sample event, the fields to check and when to worry. No sound."></video>
+</section>
+
+
+<h2>The fields that matter</h2>
+<div class="table-wrap"><table>
+  <tr><th>Field</th><th>What it tells you</th></tr>
+  <tr><td>param1 (service name)</td><td>Display name of the service, such as <code>Microsoft Defender Antivirus Service</code> or <code>Volume Shadow Copy</code>.</td></tr>
+  <tr><td>param2 / param3</td><td>Old and new start type: <code>auto start</code>, <code>demand start</code> or <code>disabled</code>.</td></tr>
+  <tr><td>param4</td><td>The service key name, such as <code>WinDefend</code>, <code>VSS</code> or <code>wbengine</code>.</td></tr>
+  <tr><td>System &gt; Security UserID</td><td>The account that made the change. SYSTEM is normal for Windows itself; a user account is worth a look.</td></tr>
+</table></div>
+
+<h2>What is normal</h2>
+<p>Background Intelligent Transfer Service (BITS) and Windows Update services flipping between auto start and demand start, driver and software installers, and Group Policy setting service startup.</p>
+
+<h2>When System Event ID 7040 is suspicious</h2>
+<ul>
+  <li>A security or backup service set to disabled: <code>WinDefend</code>, <code>Sense</code> (Defender for Endpoint), <code>VSS</code>, <code>wbengine</code>, <code>SDRSVC</code>, EDR agents, or backup software such as Veeam.</li>
+  <li>Several services disabled within a few minutes by the same account.</li>
+  <li>A change by an interactive user account rather than SYSTEM or a deployment tool.</li>
+  <li>Followed by 7036 (service stopped), shadow copy deletion (<code>vssadmin delete shadows</code>) or Defender event 5001.</li>
+</ul>
+<div class="callout"><p><strong>Common false positive:</strong> Software installers and hardening scripts often disable services such as Print Spooler or Remote Registry on purpose. Keep a list of services your baseline disables.</p></div>
+
+<h2>Find System Event ID 7040 with PowerShell</h2>
+<pre><code>Get-WinEvent -FilterHashtable @{LogName='System'; Id=7040; StartTime=(Get-Date).AddDays(-7)} -MaxEvents 50 |
+  ForEach-Object {
+    $d = [ordered]@{ Time = $_.TimeCreated; Computer = $_.MachineName }
+    ([xml]$_.ToXml()).Event.EventData.Data | ForEach-Object { $d[$_.Name] = $_.'#text' }
+    [pscustomobject]$d
+  } | Format-List</code></pre>
+<h3>Microsoft Sentinel (KQL)</h3>
+<pre><code>Event
+| where TimeGenerated &gt; ago(7d) and EventLog == &quot;System&quot; and EventID == 7040
+| project TimeGenerated, Computer, RenderedDescription, EventData
+| order by TimeGenerated desc</code></pre>
+
+<h2>Related events</h2>
+<ul>
+<li><a href="../system-7045/">System Event ID 7045</a>: New service installed</li>
+<li><a href="../defender-5001/">Defender Event ID 5001</a>: Defender real-time protection disabled</li>
+<li><a href="../4697/">Event ID 4697</a>: Service installed</li>
+<li><a href="../4688/">Event ID 4688</a>: New process created</li>
+</ul>
+
+<h2>FAQ</h2>
+<h3>Why is Event ID 7040 so noisy?</h3>
+<p>Windows Update and BITS change their own start types routinely. Filter on param4 for the services you care about instead of alerting on every 7040.</p>
+<h3>Does Event ID 7040 mean the service was stopped?</h3>
+<p>No, only its start type changed. A stop is logged as 7036. Attackers usually do both, and the service stays off after a reboot.</p>
+<h3>Which services should I watch for in Event ID 7040?</h3>
+<p>Defender (<code>WinDefend</code>, <code>WdNisSvc</code>, <code>Sense</code>), your EDR agent, <code>VSS</code>, <code>wbengine</code>, <code>EventLog</code>, backup agents and remote management tools you rely on for response.</p>
+    <div class="next">
+      <div><b>Have an export full of these events?</b><p>Windows Event Triage reads a CSV, EVTX-to-JSON or XML export in your browser and flags brute force, new admins, suspicious services and log clearing.</p></div>
+      <a class="btn btn-primary" href="../../event-triage/">Open Event Triage</a>
+    </div>
+    <div class="next">
+      <div><b>Found an IP, domain or hash in the event?</b><p>IOC Triage, our free browser extension: right-click it for a verdict from 15 threat-intel sources, then copy a ready ticket note.</p></div>
+      <a class="btn btn-ghost" href="https://chromewebstore.google.com/detail/dncgneacahomieionjkaofmfnojlkfmc?utm_source=tools.opsvantage.net&amp;utm_medium=events&amp;utm_campaign=event-system-7040">Add IOC Triage to Chrome</a>
+    </div>
+  </article>
+</main>
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../../">All tools</a> · <a href="../../guides/">Guides</a> · <a href="../../privacy/">Privacy &amp; terms</a> · <a href="../../how-it-works/">How it works</a> · <a href="../../changelog/">Changelog</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../../assets/hub.js?v=202611081844"></script>
+</body>
+</html>

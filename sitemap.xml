@@ -27,7 +27,7 @@
   <url><loc>https://tools.opsvantage.net/events/4720/</loc><lastmod>2026-11-03</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://tools.opsvantage.net/events/4724/</loc><lastmod>2026-11-03</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://tools.opsvantage.net/events/4728/</loc><lastmod>2026-11-03</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://tools.opsvantage.net/events/4732/</loc><lastmod>2026-11-03</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://tools.opsvantage.net/events/4732/</loc><lastmod>2026-11-08</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://tools.opsvantage.net/events/4740/</loc><lastmod>2026-11-03</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://tools.opsvantage.net/events/4768/</loc><lastmod>2026-11-03</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://tools.opsvantage.net/events/4769/</loc><lastmod>2026-11-03</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
@@ -43,7 +43,7 @@
   <url><loc>https://tools.opsvantage.net/guides/decode-encoded-powershell/</loc><lastmod>2026-11-03</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://tools.opsvantage.net/events/4697/</loc><lastmod>2026-11-03</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://tools.opsvantage.net/events/4719/</loc><lastmod>2026-11-03</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://tools.opsvantage.net/events/4738/</loc><lastmod>2026-11-03</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://tools.opsvantage.net/events/4738/</loc><lastmod>2026-11-08</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://tools.opsvantage.net/events/5140/</loc><lastmod>2026-11-03</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://tools.opsvantage.net/events/5145/</loc><lastmod>2026-11-03</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://tools.opsvantage.net/events/defender-1116/</loc><lastmod>2026-11-03</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
@@ -93,10 +93,20 @@
   <url><loc>https://tools.opsvantage.net/events/4779/</loc><lastmod>2026-11-03</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://tools.opsvantage.net/events/4800/</loc><lastmod>2026-11-03</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://tools.opsvantage.net/events/4801/</loc><lastmod>2026-11-03</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://tools.opsvantage.net/events/4928/</loc><lastmod>2026-11-03</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://tools.opsvantage.net/events/4928/</loc><lastmod>2026-11-08</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://tools.opsvantage.net/events/4929/</loc><lastmod>2026-11-03</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://tools.opsvantage.net/events/5136/</loc><lastmod>2026-11-03</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://tools.opsvantage.net/events/system-104/</loc><lastmod>2026-11-03</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://tools.opsvantage.net/events/sysmon-22/</loc><lastmod>2026-11-03</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://tools.opsvantage.net/events/sysmon-11/</loc><lastmod>2026-11-03</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://tools.opsvantage.net/events/4739/</loc><lastmod>2026-11-08</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://tools.opsvantage.net/events/4756/</loc><lastmod>2026-11-08</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://tools.opsvantage.net/events/4765/</loc><lastmod>2026-11-08</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://tools.opsvantage.net/events/4794/</loc><lastmod>2026-11-08</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://tools.opsvantage.net/events/system-7040/</loc><lastmod>2026-11-08</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://tools.opsvantage.net/events/defender-5007/</loc><lastmod>2026-11-08</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://tools.opsvantage.net/events/defender-1117/</loc><lastmod>2026-11-08</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://tools.opsvantage.net/events/sysmon-8/</loc><lastmod>2026-11-08</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://tools.opsvantage.net/events/sysmon-7/</loc><lastmod>2026-11-08</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://tools.opsvantage.net/events/powershell-400/</loc><lastmod>2026-11-08</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
 </urlset>

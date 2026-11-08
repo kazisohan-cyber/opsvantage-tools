@@ -17,11 +17,11 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://tools.opsvantage.net/assets/media/home-og.jpg">
-<script src="../assets/theme.js?v=202611070750"></script>
+<script src="../assets/theme.js?v=202611081844"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../assets/hub.css?v=202611070750">
+<link rel="stylesheet" href="../assets/hub.css?v=202611081844">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -71,13 +71,13 @@
   <tr id="ev-4726"><td><a href="4726/">4726</a></td><td>Security</td><td>User account deleted</td><td>Medium</td><td>Covering tracks or sabotage.</td></tr>
   <tr id="ev-4728"><td><a href="4728/">4728</a></td><td>Security</td><td>Member added to global security group</td><td>Medium</td><td>Privilege escalation when the group is Domain Admins or another admin group.</td></tr>
   <tr id="ev-4732"><td><a href="4732/">4732</a></td><td>Security</td><td>Member added to local security group</td><td>Medium</td><td>Adding to local Administrators or Remote Desktop Users gives persistence.</td></tr>
-  <tr id="ev-4756"><td>4756</td><td>Security</td><td>Member added to universal security group</td><td>Medium</td><td>Enterprise Admins / Schema Admins are universal groups.</td></tr>
+  <tr id="ev-4756"><td><a href="4756/">4756</a></td><td>Security</td><td>Member added to universal security group</td><td>Medium</td><td>Enterprise Admins / Schema Admins are universal groups.</td></tr>
   <tr id="ev-4738"><td><a href="4738/">4738</a></td><td>Security</td><td>User account changed</td><td>Low</td><td>Look for &quot;Don't require preauth&quot; (AS-REP roasting) or password-never-expires being set.</td></tr>
   <tr id="ev-4740"><td><a href="4740/">4740</a></td><td>Security</td><td>Account locked out</td><td>Low</td><td>Brute force, or an old password cached on a phone or mapped drive.</td></tr>
   <tr id="ev-4767"><td><a href="4767/">4767</a></td><td>Security</td><td>Account unlocked</td><td>Informational</td><td>Helpdesk or self-service unlock.</td></tr>
-  <tr id="ev-4765"><td>4765</td><td>Security</td><td>SID History added to an account</td><td>High</td><td>SID History injection gives hidden admin rights.</td></tr>
+  <tr id="ev-4765"><td><a href="4765/">4765</a></td><td>Security</td><td>SID History added to an account</td><td>High</td><td>SID History injection gives hidden admin rights.</td></tr>
   <tr id="ev-4766"><td>4766</td><td>Security</td><td>SID History add attempt failed</td><td>High</td><td>Someone tried SID History injection.</td></tr>
-  <tr id="ev-4794"><td>4794</td><td>Security</td><td>DSRM administrator password set</td><td>High</td><td>The DSRM account can be used as a domain controller backdoor.</td></tr>
+  <tr id="ev-4794"><td><a href="4794/">4794</a></td><td>Security</td><td>DSRM administrator password set</td><td>High</td><td>The DSRM account can be used as a domain controller backdoor.</td></tr>
   <tr id="ev-4729"><td><a href="4729/">4729</a></td><td>Security</td><td>Member removed from global security group</td><td>Low</td><td>Removing admins can lock defenders out; removing a just-added account can be cleanup.</td></tr>
   <tr id="ev-4733"><td><a href="4733/">4733</a></td><td>Security</td><td>Member removed from local security group</td><td>Low</td><td>Often cleanup after temporary admin rights, sometimes an attacker covering tracks.</td></tr>
   <tr id="ev-4741"><td><a href="4741/">4741</a></td><td>Security</td><td>Computer account created</td><td>Medium</td><td>Any user can add up to 10 computers by default (MachineAccountQuota); attacks like RBCD abuse and noPac start here.</td></tr>
@@ -104,7 +104,7 @@
   <tr id="ev-1102"><td><a href="1102/">1102</a></td><td>Security</td><td>Security audit log cleared</td><td>Critical</td><td>Attackers clear the Security log to hide what they did. Almost never legitimate on servers.</td></tr>
   <tr id="ev-system-104"><td><a href="system-104/">104</a></td><td>System</td><td>Event log cleared</td><td>High</td><td>A System or application log was cleared.</td></tr>
   <tr id="ev-4719"><td><a href="4719/">4719</a></td><td>Security</td><td>System audit policy changed</td><td>High</td><td>Turning off auditing blinds the SOC before an attack.</td></tr>
-  <tr id="ev-4739"><td>4739</td><td>Security</td><td>Domain policy changed</td><td>Medium</td><td>Password or lockout policy weakened.</td></tr>
+  <tr id="ev-4739"><td><a href="4739/">4739</a></td><td>Security</td><td>Domain policy changed</td><td>Medium</td><td>Password or lockout policy weakened.</td></tr>
   <tr id="ev-4662"><td><a href="4662/">4662</a></td><td>Security</td><td>Operation performed on an AD object</td><td>Informational</td><td>With the replication GUIDs (1131f6aa / 1131f6ad / 89e95b76) from a non-DC account, this is DCSync.</td></tr>
   <tr id="ev-5136"><td><a href="5136/">5136</a></td><td>Security</td><td>Directory object modified</td><td>Low</td><td>GPO and AdminSDHolder changes show up here.</td></tr>
   <tr id="ev-4928"><td><a href="4928/">4928</a></td><td>Security</td><td>AD replica source naming context established</td><td>Low</td><td>Normal when DCs set up replication; a source that is not a known domain controller points to a rogue DC (DCShadow).</td></tr>
@@ -122,7 +122,7 @@
   <tr id="ev-4688"><td><a href="4688/">4688</a></td><td>Security</td><td>New process created</td><td>Informational</td><td>With command-line auditing on, this shows encoded PowerShell, LOLBins and ransomware commands.</td></tr>
   <tr id="ev-4697"><td><a href="4697/">4697</a></td><td>Security</td><td>Service installed</td><td>Medium</td><td>PsExec, Cobalt Strike and many RATs install a service.</td></tr>
   <tr id="ev-system-7045"><td><a href="system-7045/">7045</a></td><td>System</td><td>New service installed</td><td>Medium</td><td>The System-log version of a new service, often PsExec (PSEXESVC) or malware.</td></tr>
-  <tr id="ev-system-7040"><td>7040</td><td>System</td><td>Service start type changed</td><td>Low</td><td>Disabling security services (Defender, backup agents) before ransomware.</td></tr>
+  <tr id="ev-system-7040"><td><a href="system-7040/">7040</a></td><td>System</td><td>Service start type changed</td><td>Low</td><td>Disabling security services (Defender, backup agents) before ransomware.</td></tr>
   <tr id="ev-system-7036"><td>7036</td><td>System</td><td>Service state changed</td><td>Informational</td><td>Service started or stopped. Look for security or backup services stopping.</td></tr>
   <tr id="ev-4698"><td><a href="4698/">4698</a></td><td>Security</td><td>Scheduled task created</td><td>Medium</td><td>Classic persistence.</td></tr>
   <tr id="ev-4699"><td><a href="4699/">4699</a></td><td>Security</td><td>Scheduled task deleted</td><td>Low</td><td>Cleanup after a one-time task.</td></tr>
@@ -142,7 +142,7 @@
   <tr><th>ID</th><th>Log</th><th>Event</th><th>Severity</th><th>Why it matters</th></tr>
   <tr id="ev-powershell-4103"><td>4103</td><td>PowerShell</td><td>PowerShell module logging</td><td>Informational</td><td>Pipeline execution details.</td></tr>
   <tr id="ev-powershell-4104"><td><a href="powershell-4104/">4104</a></td><td>PowerShell</td><td>PowerShell script block logged</td><td>Low</td><td>The decoded script that actually ran. Best single source for malicious PowerShell.</td></tr>
-  <tr id="ev-powershell-400"><td>400</td><td>PowerShell</td><td>PowerShell engine started</td><td>Informational</td><td>HostApplication shows the full command line, including -EncodedCommand.</td></tr>
+  <tr id="ev-powershell-400"><td><a href="powershell-400/">400</a></td><td>PowerShell</td><td>PowerShell engine started</td><td>Informational</td><td>HostApplication shows the full command line, including -EncodedCommand.</td></tr>
 </table></div>
 
 <h2>RDP</h2>
@@ -156,9 +156,9 @@
 <div class="table-wrap"><table>
   <tr><th>ID</th><th>Log</th><th>Event</th><th>Severity</th><th>Why it matters</th></tr>
   <tr id="ev-defender-1116"><td><a href="defender-1116/">1116</a></td><td>Defender</td><td>Defender detected malware</td><td>High</td><td>Microsoft Defender found a threat.</td></tr>
-  <tr id="ev-defender-1117"><td>1117</td><td>Defender</td><td>Defender took action on malware</td><td>Medium</td><td>Remediation result for a detection.</td></tr>
+  <tr id="ev-defender-1117"><td><a href="defender-1117/">1117</a></td><td>Defender</td><td>Defender took action on malware</td><td>Medium</td><td>Remediation result for a detection.</td></tr>
   <tr id="ev-defender-5001"><td><a href="defender-5001/">5001</a></td><td>Defender</td><td>Defender real-time protection disabled</td><td>High</td><td>Attackers turn off Defender before running tools.</td></tr>
-  <tr id="ev-defender-5007"><td>5007</td><td>Defender</td><td>Defender configuration changed</td><td>Medium</td><td>Exclusions added for a folder or process are a common bypass.</td></tr>
+  <tr id="ev-defender-5007"><td><a href="defender-5007/">5007</a></td><td>Defender</td><td>Defender configuration changed</td><td>Medium</td><td>Exclusions added for a folder or process are a common bypass.</td></tr>
 </table></div>
 
 <h2>Sysmon</h2>
@@ -166,8 +166,8 @@
   <tr><th>ID</th><th>Log</th><th>Event</th><th>Severity</th><th>Why it matters</th></tr>
   <tr id="ev-sysmon-1"><td><a href="sysmon-1/">1</a></td><td>Sysmon</td><td>process creation</td><td>Informational</td><td>Full command line, hashes and parent process.</td></tr>
   <tr id="ev-sysmon-3"><td><a href="sysmon-3/">3</a></td><td>Sysmon</td><td>network connection</td><td>Informational</td><td>Which process talked to which IP and port.</td></tr>
-  <tr id="ev-sysmon-7"><td>7</td><td>Sysmon</td><td>image loaded</td><td>Informational</td><td>DLL side-loading hunts.</td></tr>
-  <tr id="ev-sysmon-8"><td>8</td><td>Sysmon</td><td>CreateRemoteThread</td><td>Medium</td><td>Process injection.</td></tr>
+  <tr id="ev-sysmon-7"><td><a href="sysmon-7/">7</a></td><td>Sysmon</td><td>image loaded</td><td>Informational</td><td>DLL side-loading hunts.</td></tr>
+  <tr id="ev-sysmon-8"><td><a href="sysmon-8/">8</a></td><td>Sysmon</td><td>CreateRemoteThread</td><td>Medium</td><td>Process injection.</td></tr>
   <tr id="ev-sysmon-10"><td><a href="sysmon-10/">10</a></td><td>Sysmon</td><td>process access</td><td>Informational</td><td>Access to lsass.exe is credential dumping (Mimikatz, procdump).</td></tr>
   <tr id="ev-sysmon-11"><td><a href="sysmon-11/">11</a></td><td>Sysmon</td><td>file created</td><td>Informational</td><td>Dropped payloads and ransom notes.</td></tr>
   <tr id="ev-sysmon-12"><td>12</td><td>Sysmon</td><td>registry object added or deleted</td><td>Informational</td><td>Run-key persistence.</td></tr>
@@ -186,6 +186,6 @@
     <span><a href="../">All tools</a> · <a href="../guides/">Guides</a> · <a href="../privacy/">Privacy &amp; terms</a> · <a href="../how-it-works/">How it works</a> · <a href="../changelog/">Changelog</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
   </div>
 </footer>
-<script src="../assets/hub.js?v=202611070750"></script>
+<script src="../assets/hub.js?v=202611081844"></script>
 </body>
 </html>

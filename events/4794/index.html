@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Windows Event ID 4794: DSRM administrator password set | OpsVantage Tools</title>
+<meta name="description" content="What Event ID 4794 (dsrm administrator password set) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.">
+<link rel="canonical" href="https://tools.opsvantage.net/events/4794/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../../assets/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Windows Event ID 4794: DSRM administrator password set">
+<meta property="og:description" content="What Event ID 4794 (dsrm administrator password set) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.">
+<meta property="og:url" content="https://tools.opsvantage.net/events/4794/">
+<meta property="og:image" content="https://tools.opsvantage.net/assets/media/home-og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://tools.opsvantage.net/assets/media/home-og.jpg">
+<script src="../../assets/theme.js?v=202611081844"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/hub.css?v=202611081844">
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Windows Event ID 4794: DSRM administrator password set",
+    "description": "What Event ID 4794 (dsrm administrator password set) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.",
+    "url": "https://tools.opsvantage.net/events/4794/",
+    "dateModified": "2026-11-08",
+    "inLanguage": "en",
+    "author": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is Event ID 4794 always malicious?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. Setting the DSRM password is normal maintenance. It becomes suspicious when nobody planned it, or when DsrmAdminLogonBehavior has been changed to 2 on the same DC."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I check whether a DC has the DSRM backdoor enabled?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Read DsrmAdminLogonBehavior under HKLM\\System\\CurrentControlSet\\Control\\Lsa. If it is missing or 0, the DSRM account only works in restore mode. A value of 2 lets it log on over the network at any time."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Which audit policy logs Event ID 4794?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Audit User Account Management, under Account Management in Advanced Audit Policy, on domain controllers."
+        }
+      }
+    ]
+  }
+]
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../../"><img src="../../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../../#tools">Tools</a>
+      <a class="link opt" href="../../guides/">Guides</a>
+      <a class="link opt" href="../../events/">Event IDs</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <article class="article">
+    <div class="tool-head">
+      <div class="crumbs"><a href="../../">Tools</a> / <a href="../">Event IDs</a> / Event ID 4794</div>
+      <h1>Event ID 4794: <em>dsrm administrator password set</em></h1>
+      <p class="lead">What Event ID 4794 (dsrm administrator password set) means, the fields to check, what is normal and what is suspicious, with PowerShell and KQL queries to find it.</p>
+      <div class="meta-line">Log: Security · Severity: High · MITRE ATT&amp;CK <a href="https://attack.mitre.org/techniques/T1098/" rel="noopener">T1098</a> · Updated 2026-11-08</div>
+    </div>
+<p>Event ID 4794 is logged on a domain controller when someone attempts to set the Directory Services Restore Mode (DSRM) administrator password. DSRM is the local administrator account every DC has for recovery when Active Directory is offline. It is rarely used, which makes it a good place for a backdoor: an attacker who knows the DSRM password, and has changed one registry value, can log on to the DC over the network with it even while AD is running.</p>
+<section class="demo-block" style="margin:22px 0 8px">
+  <video class="demo-video" muted loop playsinline preload="none" width="960" height="540" poster="../../assets/media/events/4794.jpg" data-src="../../assets/media/events/4794.mp4" aria-label="Event ID 4794 explained in 15 seconds: a sample event, the fields to check and when to worry. No sound."></video>
+</section>
+
+
+<h2>The fields that matter</h2>
+<div class="table-wrap"><table>
+  <tr><th>Field</th><th>What it tells you</th></tr>
+  <tr><td>Subject &gt; Account Name</td><td>Who ran the password change, usually through <code>ntdsutil</code> or <code>setpassword</code>.</td></tr>
+  <tr><td>Subject &gt; Account Domain / Logon ID</td><td>Links to the logon session (4624) the change came from.</td></tr>
+  <tr><td>Additional Information &gt; Caller Workstation</td><td>The machine the request came from.</td></tr>
+  <tr><td>Additional Information &gt; Status Code</td><td><code>0x0</code> when the password was set successfully.</td></tr>
+</table></div>
+
+<h2>What is normal</h2>
+<p>DSRM password rotation during a planned maintenance window, when a new DC is promoted, or when a password vault or script rotates it on a schedule, using <code>ntdsutil &quot;set dsrm password&quot;</code>, optionally with &quot;sync from domain account&quot;.</p>
+
+<h2>When Event ID 4794 is suspicious</h2>
+<ul>
+  <li>A 4794 with no change ticket, especially outside working hours.</li>
+  <li>The Subject is not one of your named domain admins, or the Caller Workstation is not an admin workstation.</li>
+  <li>The registry value <code>HKLM\System\CurrentControlSet\Control\Lsa\DsrmAdminLogonBehavior</code> set to <code>2</code> on the same DC (look for a 4657 or Sysmon 13): that allows network logons with the DSRM account, which completes the backdoor.</li>
+  <li>Logons by the local DSRM account (the DC's local Administrator) in 4624 while the DC is running normally.</li>
+</ul>
+<div class="callout"><p><strong>Common false positive:</strong> Scheduled DSRM password rotation by a privileged access management tool. Note its account and schedule so you can exclude exactly that.</p></div>
+
+<h2>Find Event ID 4794 with PowerShell</h2>
+<pre><code>Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4794; StartTime=(Get-Date).AddDays(-7)} -MaxEvents 50 |
+  ForEach-Object {
+    $d = [ordered]@{ Time = $_.TimeCreated; Computer = $_.MachineName }
+    ([xml]$_.ToXml()).Event.EventData.Data | ForEach-Object { $d[$_.Name] = $_.'#text' }
+    [pscustomobject]$d
+  } | Format-List</code></pre>
+<h3>Microsoft Sentinel (KQL)</h3>
+<pre><code>SecurityEvent
+| where TimeGenerated &gt; ago(7d) and EventID == 4794
+| project TimeGenerated, Computer, Account, Activity, EventData
+| order by TimeGenerated desc</code></pre>
+
+<h2>Related events</h2>
+<ul>
+<li><a href="../4624/">Event ID 4624</a>: Successful logon</li>
+<li><a href="../4672/">Event ID 4672</a>: Special privileges assigned to new logon</li>
+<li><a href="../4657/">Event ID 4657</a>: Registry value modified</li>
+<li><a href="../4719/">Event ID 4719</a>: System audit policy changed</li>
+</ul>
+
+<h2>FAQ</h2>
+<h3>Is Event ID 4794 always malicious?</h3>
+<p>No. Setting the DSRM password is normal maintenance. It becomes suspicious when nobody planned it, or when DsrmAdminLogonBehavior has been changed to 2 on the same DC.</p>
+<h3>How do I check whether a DC has the DSRM backdoor enabled?</h3>
+<p>Read <code>DsrmAdminLogonBehavior</code> under <code>HKLM\System\CurrentControlSet\Control\Lsa</code>. If it is missing or 0, the DSRM account only works in restore mode. A value of 2 lets it log on over the network at any time.</p>
+<h3>Which audit policy logs Event ID 4794?</h3>
+<p>Audit User Account Management, under Account Management in Advanced Audit Policy, on domain controllers.</p>
+    <div class="next">
+      <div><b>Have an export full of these events?</b><p>Windows Event Triage reads a CSV, EVTX-to-JSON or XML export in your browser and flags brute force, new admins, suspicious services and log clearing.</p></div>
+      <a class="btn btn-primary" href="../../event-triage/">Open Event Triage</a>
+    </div>
+    <div class="next">
+      <div><b>Found an IP, domain or hash in the event?</b><p>IOC Triage, our free browser extension: right-click it for a verdict from 15 threat-intel sources, then copy a ready ticket note.</p></div>
+      <a class="btn btn-ghost" href="https://chromewebstore.google.com/detail/dncgneacahomieionjkaofmfnojlkfmc?utm_source=tools.opsvantage.net&amp;utm_medium=events&amp;utm_campaign=event-4794">Add IOC Triage to Chrome</a>
+    </div>
+  </article>
+</main>
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../../">All tools</a> · <a href="../../guides/">Guides</a> · <a href="../../privacy/">Privacy &amp; terms</a> · <a href="../../how-it-works/">How it works</a> · <a href="../../changelog/">Changelog</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../../assets/hub.js?v=202611081844"></script>
+</body>
+</html>
