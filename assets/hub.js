@@ -28,7 +28,8 @@
           else if (!v.paused) v.pause();
         });
       }, { rootMargin: '200px 0px', threshold: 0.25 });
-      vids.forEach(function (v) { io.observe(v); v.addEventListener('click', function () { if (v.paused) v.play(); else v.pause(); }); });
+      // Videos with a voice-over (data-voice) get native controls so viewers can turn the sound on.
+      vids.forEach(function (v) { io.observe(v); if (v.hasAttribute('data-voice')) v.controls = true; else v.addEventListener('click', function () { if (v.paused) v.play(); else v.pause(); }); });
     }
   }
 
