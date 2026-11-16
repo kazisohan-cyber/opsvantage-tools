@@ -17,11 +17,11 @@
 <meta name="twitter:image" content="https://tools.opsvantage.net/assets/media/home-og.jpg">
 <meta name="theme-color" content="#0A0D18">
 <link rel="icon" type="image/png" href="../assets/logo.png">
-<script src="../assets/theme.js?v=202611161448"></script>
+<script src="../assets/theme.js?v=202611161517"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../assets/hub.css?v=202611161448">
+<link rel="stylesheet" href="../assets/hub.css?v=202611161517">
 <style>
   .doc{max-width:760px;padding-bottom:64px}
   .doc h2{margin:34px 0 10px}
@@ -72,6 +72,8 @@
     <tr><td>Hunting Query Generator</td><td>None.</td></tr>
     <tr><td>Payload Decoder</td><td>None. Decoded content is shown as text and never run.</td></tr>
     <tr><td>JWT Token Decoder</td><td>None. The token is cleared when you leave the page.</td></tr>
+    <tr><td>Windows Error Code Decoder</td><td>None.</td></tr>
+    <tr><td>Timestamp Converter</td><td>None.</td></tr>
     <tr><td>CVE Prioritizer</td><td>The CVE IDs you enter, sent from your browser to FIRST (EPSS scores) and CVE.org (CVSS and descriptions); the CISA KEV catalogue is downloaded from GitHub, where CISA publishes it.</td></tr>
     <tr><td>M365 Posture Scanner</td><td>Microsoft sign-in and read-only Microsoft Graph calls, straight from your browser to Microsoft, plus the same DNS lookups for each verified domain.</td></tr>
   </table>
@@ -161,6 +163,12 @@
   <h2 id="payload">Payload Decoder</h2>
   <p>Each pass looks for, in order: a PowerShell <code>-EncodedCommand</code> argument, a <code>FromBase64String()</code> or similar call, a whole hex string, a whole Base64 string, URL encoding, HTML entities, character codes, reversed text, and the longest Base64 run inside other text. Decoded bytes are checked for gzip, zlib and raw deflate and for UTF-16LE text, and a layer is only accepted when it produces readable text or a recognised file type. It stops after ten layers. The result is scanned for risky behaviour (download cradles, Invoke-Expression, hidden windows, AMSI tampering, Mimikatz, abused Windows tools, Defender changes, backup deletion, persistence) and for indicators. Custom ciphers such as XOR are not attempted.</p>
 
+  <h2 id="codes">Windows Error Code Decoder</h2>
+  <p>Codes are pulled out of the pasted text together with the label in front of them (Status, Sub Status, Failure Code, Ticket Options, GrantedAccess), because the same number can mean different things: <code>0x12</code> is a Kerberos "client revoked" result but would be a meaningless NTSTATUS. Values are matched against fixed tables: NTSTATUS codes documented for Event IDs 4625 and 4776, Kerberos result codes from RFC 4120 as Windows reports them in 4768, 4769 and 4771, the Kerberos ticket option bits (bit 0 is the most significant bit), and Windows process access rights for the Sysmon Event ID 10 GrantedAccess mask. A bit field is only decoded when every set bit is a known flag. The notes on what a code usually means are investigation guidance, not proof.</p>
+
+  <h2 id="time">Timestamp Converter</h2>
+  <p>Numbers are read with BigInt so 18- and 19-digit values stay exact. Each number is tried as Unix seconds, milliseconds, microseconds and nanoseconds, Windows FILETIME (100-nanosecond intervals since 1601-01-01, used by LDAP and Active Directory), Chrome and WebKit time (microseconds since 1601) and Mac absolute time (seconds since 2001-01-01). Readings outside 1980 to 2100 are dropped and the rest are sorted by how close they are to today, so the first one is the most likely. Hex values of 16 digits are read as FILETIME in both byte orders, and 8 digits as Unix seconds. Decimals are also tried as Excel and OLE dates (days since 1899-12-30). Date strings without a time zone are read as UTC.</p>
+
   <h2 id="jwt">JWT Token Decoder</h2>
   <p>The header and payload are Base64url-decoded and explained. For Microsoft Entra ID tokens it names well-known Microsoft client apps and APIs, maps the <code>wids</code> claim to directory roles, reads <code>amr</code> for MFA, and flags privileged roles, powerful scopes, public command-line clients often used in device-code phishing, lifetimes over two days and unsigned (<code>alg: none</code>) tokens. The signature is not verified. Tokens are credentials: prefer expired ones, and the page clears the box when you leave.</p>
 
@@ -177,6 +185,6 @@
     <span><a href="../">All tools</a> · <a href="../privacy/">Privacy &amp; terms</a> · <a href="../how-it-works/">How it works</a> · <a href="../changelog/">Changelog</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
   </div>
 </footer>
-<script src="../assets/hub.js?v=202611161448"></script>
+<script src="../assets/hub.js?v=202611161517"></script>
 </body>
 </html>
