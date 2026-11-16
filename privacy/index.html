@@ -8,11 +8,11 @@
 <link rel="canonical" href="https://tools.opsvantage.net/privacy/">
 <meta name="theme-color" content="#0A0D18">
 <link rel="icon" type="image/png" href="../assets/logo.png">
-<script src="../assets/theme.js?v=202611161517"></script>
+<script src="../assets/theme.js?v=202611161540"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../assets/hub.css?v=202611161517">
+<link rel="stylesheet" href="../assets/hub.css?v=202611161540">
 <style>
   .doc{max-width:760px;padding-bottom:64px}
   .doc h2{margin:34px 0 10px}
@@ -56,6 +56,7 @@
 
   <h3>Tools that make network requests</h3>
   <ul>
+    <li><strong>Lookalike Domain Checker</strong>: the variant domain names it generates (up to about 400 per check, plus their <code>_dmarc</code> names) are looked up directly from your browser through Cloudflare's public DNS resolver (1.1.1.1), falling back to Google Public DNS. Those providers receive the queries under their own privacy policies. We do not.</li>
     <li><strong>SPF, DKIM &amp; DMARC Checker</strong>: the domain names you check are looked up directly from your browser through Cloudflare's public DNS resolver (1.1.1.1), falling back to Google Public DNS. Those providers receive the DNS queries under their own privacy policies. We do not.</li>
     <li><strong>CVE Prioritizer</strong>: the CVE IDs you enter are looked up directly from your browser at FIRST (api.first.org, for EPSS scores) and CVE.org (cveawg.mitre.org), and the CISA KEV catalogue is downloaded from GitHub (raw.githubusercontent.com). Only CVE IDs are sent, under those services' own privacy policies.</li>
     <li><strong>M365 Posture Scanner</strong>: talks directly to Microsoft. See the section below.</li>
@@ -120,6 +121,6 @@
     <span><a href="../">All tools</a> · <a href="../privacy/">Privacy &amp; terms</a> · <a href="../how-it-works/">How it works</a> · <a href="../changelog/">Changelog</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
   </div>
 </footer>
-<script src="../assets/hub.js?v=202611161517"></script>
+<script src="../assets/hub.js?v=202611161540"></script>
 </body>
 </html>

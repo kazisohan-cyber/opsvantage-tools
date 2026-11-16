@@ -17,11 +17,11 @@
 <meta name="twitter:image" content="https://tools.opsvantage.net/assets/media/home-og.jpg">
 <meta name="theme-color" content="#0A0D18">
 <link rel="icon" type="image/png" href="../assets/logo.png">
-<script src="../assets/theme.js?v=202611161517"></script>
+<script src="../assets/theme.js?v=202611161540"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../assets/hub.css?v=202611161517">
+<link rel="stylesheet" href="../assets/hub.css?v=202611161540">
 <style>
   .doc{max-width:760px;padding-bottom:64px}
   .doc h2{margin:34px 0 10px}
@@ -67,6 +67,7 @@
     <tr><td>Email Header Analyzer</td><td>None. A full .eml is parsed on your device; its HTML is read in an inert document only to collect links, so nothing in the email runs or loads.</td></tr>
     <tr><td>Windows Event Triage</td><td>None.</td></tr>
     <tr><td>M365 Sign-in Review</td><td>None. Country positions for the map and travel speeds come from a table built into the page.</td></tr>
+    <tr><td>Lookalike Domain Checker</td><td>DNS lookups for the generated variant domains (A, MX, TXT and _dmarc TXT), sent from your browser to Cloudflare's resolver (1.1.1.1), with Google Public DNS as a fallback.</td></tr>
     <tr><td>SPF, DKIM &amp; DMARC Checker</td><td>DNS lookups for the domain you enter, sent from your browser to Cloudflare's resolver (1.1.1.1), with Google Public DNS as a fallback.</td></tr>
     <tr><td>Phishing Link Unwrapper</td><td>None. Links are decoded in the page and never visited.</td></tr>
     <tr><td>Hunting Query Generator</td><td>None.</td></tr>
@@ -92,6 +93,10 @@
   <p>Each signal adds or removes points. DMARC fail adds 30, SPF fail 25, a Reply-To on another organisation's domain 25, a brand in the display name sent from someone else's domain 25; DMARC pass removes 15. A total of 45 or more is <strong>malicious</strong>, 18 or more <strong>suspicious</strong>, and -15 or less <strong>benign</strong>. Brand impersonation never scores below suspicious, because a phisher's own domain can pass SPF, DKIM and DMARC perfectly. Risky attachments, link text that hides a different domain, or links the brand checks block raise the verdict further.</p>
   <h3>Limits</h3>
   <p>Headers added by your own mail system are trusted as written; anything before the first server you control could be forged. A clean result means these patterns are absent, not that the email is safe.</p>
+
+  <h2 id="lookalike">Lookalike Domain Checker</h2>
+  <p>The domain is split into its name and public suffix (for example <code>contoso</code> and <code>co.uk</code>). Variants are generated in the spirit of dnstwist: a missing, doubled or swapped letter, neighbouring keys on a QWERTY keyboard, vowel swaps, look-alike characters (<code>rn</code> for <code>m</code>, <code>0</code> for <code>o</code>, <code>vv</code> for <code>w</code>), Cyrillic and Greek homoglyphs converted to punycode by the browser, added hyphens and dots, the name joined with common phishing keywords, and the same name under about 35 other top-level domains. They are ordered by how often each technique is abused and capped at about 400.</p>
+  <p>Each variant gets one A lookup over DNS-over-HTTPS. A response of NXDOMAIN means it isn't registered; anything else means the name exists. Existing names then get MX, TXT (for SPF) and <code>_dmarc</code> TXT lookups. Red means mail servers (MX), amber a web address only; a null MX (<code>0 .</code>) is shown as "no mail". Registered does not mean malicious: owners often buy their own typos, so check the registrant before acting.</p>
 
   <h2 id="dmarc">SPF, DKIM &amp; DMARC Checker</h2>
   <h3>Score out of 100</h3>
@@ -185,6 +190,6 @@
     <span><a href="../">All tools</a> · <a href="../privacy/">Privacy &amp; terms</a> · <a href="../how-it-works/">How it works</a> · <a href="../changelog/">Changelog</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
   </div>
 </footer>
-<script src="../assets/hub.js?v=202611161517"></script>
+<script src="../assets/hub.js?v=202611161540"></script>
 </body>
 </html>

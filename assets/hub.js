@@ -272,7 +272,7 @@
     var seen = false;
     try { seen = !!localStorage.getItem(key); } catch (e) { return; }
     if (!force && (seen || /[?&]tour=0/.test(location.search) || !document.querySelector('.tool-head'))) return;
-    var steps = TOUR.map(function (s) { return { el: document.querySelector(s.sel), t: s.t }; }).filter(function (s) { return s.el; });
+    var steps = TOUR.map(function (s) { var el = document.querySelector(s.sel); return { el: el, t: (el && el.getAttribute('data-tour')) || s.t }; }).filter(function (s) { return s.el; });
     if (steps.length < 2) return;
     var i = 0, pop = document.createElement('div'), prevFocus = document.activeElement;
     pop.style.top = (window.scrollY + 80) + 'px';

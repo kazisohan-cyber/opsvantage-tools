@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lookalike Domain Checker: Find Typosquatting and Phishing Domains | OpsVantage Tools</title>
+<meta name="description" content="Free lookalike domain checker: generate typo, homoglyph, punycode and TLD variants of your domain and see which are registered, with web and mail (MX) records, so you can spot phishing domains early. No sign-up.">
+<link rel="canonical" href="https://tools.opsvantage.net/lookalike-domains/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../assets/logo.png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Lookalike Domain Checker: who registered a domain like yours?">
+<meta property="og:description" content="Typos, swapped letters, homoglyphs, punycode and other TLDs, checked live in DNS, with mail records flagged. Free, no sign-up.">
+<meta property="og:url" content="https://tools.opsvantage.net/lookalike-domains/">
+<meta property="og:image" content="https://tools.opsvantage.net/assets/media/lookalike-domains-og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://tools.opsvantage.net/assets/media/lookalike-domains-og.jpg">
+<script src="../assets/theme.js?v=202611161540"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/hub.css?v=202611161540">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Lookalike Domain Checker",
+  "url": "https://tools.opsvantage.net/lookalike-domains/",
+  "applicationCategory": "SecurityApplication",
+  "operatingSystem": "Any (web browser)",
+  "isAccessibleForFree": true,
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "description": "Typos, swapped letters, homoglyphs, punycode and other TLDs, checked live in DNS, with mail records flagged. Free, no sign-up.",
+  "publisher": {
+    "@type": "Organization",
+    "name": "OpsVantage",
+    "url": "https://opsvantage.net/"
+  }
+}
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../"><img src="../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../#tools">All tools</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="tool-head">
+    <div class="crumbs"><a href="../">Tools</a> / Lookalike Domain Checker</div>
+    <h1>Lookalike Domain <em>Checker</em></h1>
+    <p class="lead">Enter your domain. Typo, swapped-letter, homoglyph, punycode, hyphen, keyword and other-TLD variants are generated and checked live in DNS, and each registered one is shown with its web address and whether it can send and receive email, which is what a phishing domain needs.</p>
+    <span class="privacy-note">● The variant domain names are looked up from your browser through Cloudflare's public DNS (1.1.1.1), with Google Public DNS as a fallback. Nothing goes to us.</span>
+  </div>
+
+  <div class="workspace">
+    <section class="panel" aria-labelledby="in-h">
+      <div class="panel-h">
+        <h2 id="in-h">Domain</h2>
+        <div class="row-actions" style="margin:0">
+          <button class="btn btn-ghost btn-sm" type="button" id="sample">Load sample</button>
+          <button class="btn btn-ghost btn-sm" type="button" id="clear">Clear</button>
+        </div>
+      </div>
+      <label for="input" style="position:absolute;left:-9999px">Your domain</label>
+      <textarea class="input" id="input" spellcheck="false" placeholder="contoso.com&#10;(one domain; an email address or URL works too)"></textarea>
+      <div class="opts">
+        <label><input type="checkbox" id="opt-tld" checked> Other TLDs</label>
+        <label><input type="checkbox" id="opt-kw" checked> Keywords (login, secure, support...)</label>
+        <label><input type="checkbox" id="opt-idn" checked> Homoglyphs and punycode</label>
+      </div>
+      <div class="row-actions">
+        <button class="btn btn-primary btn-sm" type="button" id="analyze">Check</button>
+        <span class="sub" style="margin:0;font-size:.8rem">Ctrl+Enter</span>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="out-h" aria-live="polite">
+      <div class="panel-h">
+        <h2 id="out-h">Registered lookalikes</h2>
+        <button class="btn btn-ghost btn-sm" type="button" id="note" disabled>Copy list</button>
+      </div>
+      <div id="out"><p class="empty">Enter a domain and press Check.</p></div>
+    </section>
+  </div>
+
+  <section class="demo-block">
+    <div class="panel-h"><h2>See it in action</h2><span class="sub" style="margin:0;font-size:.82rem">A short demo with sample data, no sound</span></div>
+    <video class="demo-video" muted loop playsinline preload="none" width="960" height="540" poster="../assets/media/lookalike-domains-demo.jpg" data-src="../assets/media/lookalike-domains-demo.mp4" aria-label="Demo of the Lookalike Domain Checker: loading sample data and reading the results"></video>
+  </section>
+
+  <section class="howto">
+    <h2>How it finds lookalikes</h2>
+    <div class="cols">
+      <div><h3>Variants</h3><p>Missing, doubled, swapped and neighbouring-key letters, look-alike characters (rn for m, 0 for o, l for 1, vv for w), Cyrillic and Greek homoglyphs encoded as punycode, added hyphens and dots, common phishing keywords such as login, secure and invoice, and the same name under other top-level domains.</p></div>
+      <div><h3>Live DNS check</h3><p>Each variant is looked up over DNS-over-HTTPS. A name that exists in DNS is registered; for those, the tool reads the web address (A record), mail servers (MX), SPF and DMARC. A lookalike with MX records can receive replies and usually send mail as well.</p></div>
+      <div><h3>Read the results</h3><p>Not every registered lookalike is hostile: companies buy common typos to protect their brand, and some are parked. Check who owns it before acting, and add the dangerous ones to your mail and web blocklists. The tool checks up to about 400 variants per domain.</p></div>
+    </div>
+    <p class="related-guides sub" style="margin-top:22px">Guides: <a href="../guides/phishing-triage-checklist/" style="color:var(--link)">Phishing email triage checklist</a> · <a href="../guides/dmarc-none-to-reject/" style="color:var(--link)">DMARC from p=none to p=reject</a></p>
+    <div class="next">
+      <div><b>Check a lookalike you found</b><p>IOC Triage, our free browser extension, gives any domain a verdict from 15 threat-intel sources with a right-click, including its age and brand-impersonation signals.</p></div>
+      <a class="btn btn-ghost" href="https://chromewebstore.google.com/detail/dncgneacahomieionjkaofmfnojlkfmc?utm_source=tools.opsvantage.net&amp;utm_medium=tool&amp;utm_campaign=lookalike-domains">Add to Chrome</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../">All tools</a> · <a href="../privacy/">Privacy &amp; terms</a> · <a href="../how-it-works/">How it works</a> · <a href="../changelog/">Changelog</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../assets/hub.js?v=202611161540"></script>
+<script src="../assets/charts.js?v=202611161540"></script>
+<script src="app.js?v=202611161540"></script>
+</body>
+</html>
