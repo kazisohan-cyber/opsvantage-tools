@@ -17,11 +17,11 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://tools.opsvantage.net/assets/media/home-og.jpg">
-<script src="../../assets/theme.js?v=202611161442"></script>
+<script src="../../assets/theme.js?v=202611161448"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../../assets/hub.css?v=202611161442">
+<link rel="stylesheet" href="../../assets/hub.css?v=202611161448">
 <script type="application/ld+json">
 [
   {
@@ -129,7 +129,7 @@
 
 <h2>Step 3: Publish p=none with reporting</h2>
 <pre><code>_dmarc.example.com  TXT  "v=DMARC1; p=none; rua=mailto:dmarc-reports@example.com; fo=1"</code></pre>
-<p>Receivers will send daily <strong>aggregate reports</strong> (XML) to the <code>rua</code> address listing every IP that sent mail as your domain and whether it passed. Use a dedicated mailbox or a DMARC reporting service; raw XML is not meant to be read by hand.</p>
+<p>Receivers will send daily <strong>aggregate reports</strong> (XML) to the <code>rua</code> address listing every IP that sent mail as your domain and whether it passed. Use a dedicated mailbox or a DMARC reporting service. For a small domain you can read them yourself: see <a href="../read-dmarc-aggregate-reports/">how to read DMARC aggregate reports</a>.</p>
 
 <h2>Step 4: Read two to four weeks of reports</h2>
 <p>For each sending source in the reports, decide:</p>
@@ -191,6 +191,6 @@
     <span><a href="../../">All tools</a> · <a href="../../guides/">Guides</a> · <a href="../../privacy/">Privacy &amp; terms</a> · <a href="../../how-it-works/">How it works</a> · <a href="../../changelog/">Changelog</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
   </div>
 </footer>
-<script src="../../assets/hub.js?v=202611161442"></script>
+<script src="../../assets/hub.js?v=202611161448"></script>
 </body>
 </html>
