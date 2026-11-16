@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Event ID 7045: new service installed and how to spot PsExec | OpsVantage Tools</title>
+<meta name="description" content="What Windows Event ID 7045 means, how to read the service file name, how PsExec and attack tools show up, and how to trace the host that pushed the service.">
+<link rel="canonical" href="https://tools.opsvantage.net/guides/event-id-7045-new-service/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../../assets/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Event ID 7045: new service installed and how to spot PsExec">
+<meta property="og:description" content="What Windows Event ID 7045 means, how to read the service file name, how PsExec and attack tools show up, and how to trace the host that pushed the service.">
+<meta property="og:url" content="https://tools.opsvantage.net/guides/event-id-7045-new-service/">
+<meta property="og:image" content="https://tools.opsvantage.net/assets/media/home-og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://tools.opsvantage.net/assets/media/home-og.jpg">
+<script src="../../assets/theme.js?v=202611161442"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/hub.css?v=202611161442">
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Event ID 7045: new service installed and how to spot PsExec",
+    "description": "What Windows Event ID 7045 means, how to read the service file name, how PsExec and attack tools show up, and how to trace the host that pushed the service.",
+    "url": "https://tools.opsvantage.net/guides/event-id-7045-new-service/",
+    "datePublished": "2026-11-16",
+    "dateModified": "2026-11-16",
+    "inLanguage": "en",
+    "author": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is the difference between Event ID 7045 and 4697?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Both record a new service. 7045 is in the System log and is always written. 4697 is in the Security log, needs \"Audit Security System Extension\" enabled, and records the account that installed the service. Collect both if you can."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Why do I see a 7045 every time someone uses a remote support tool?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Many remote support and RMM tools install a temporary service on each connection, just like PsExec. Build an allow list by service name and file path for the tools you actually use, so a renamed copy still alerts."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does a deleted service leave a trace?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The 7045 stays in the System log after the service is removed, which is why it is so useful against tools that clean up after themselves. Service Control Manager Event ID 7036 also records the service starting and stopping."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Should I alert on new kernel drivers?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes, at a lower volume threshold than services. Attackers load old, vulnerable signed drivers to switch off security tools. A new driver with an unfamiliar name, especially from a user or temp folder, should be checked against the publisher and Microsoft's vulnerable driver blocklist."
+        }
+      }
+    ]
+  }
+]
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../../"><img src="../../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../../#tools">Tools</a>
+      <a class="link opt" href="../../guides/">Guides</a>
+      <a class="link opt" href="../../events/">Event IDs</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main class="wrap"><!--email_off-->
+  <article class="article">
+    <div class="tool-head">
+      <div class="crumbs"><a href="../../">Tools</a> / <a href="../">Guides</a> / Event ID 7045</div>
+      <h1>Event ID 7045: <em>a new service was installed</em></h1>
+      <p class="lead">What Windows Event ID 7045 means, how to read the service file name, how PsExec and attack tools show up, and how to trace the host that pushed the service.</p>
+      <div class="meta-line">Updated 2026-11-16 · 7 min read</div>
+    </div>
+<p>A detection fires on a file server: <strong>Event ID 7045, "A service was installed in the system."</strong> Nobody on the change calendar was patching that box today. Servers pick up new services all the time, from agents, drivers and updates, so most of these are dull. The few that aren't are some of the clearest signs of lateral movement you will ever get in a Windows log.</p>
+<p>The good news is that a 7045 tells you almost everything you need in one field. Here is how to read it, what PsExec and attack frameworks look like, and how to find the machine that pushed the service.</p>
+
+<h2>What does Event ID 7045 mean?</h2>
+<p>7045 is written to the <strong>System</strong> log by the Service Control Manager whenever a new service is registered. It is on by default on every Windows version, with no audit policy needed, which makes it one of the few lateral-movement signals you can count on even on a badly configured network.</p>
+<div class="table-wrap"><table>
+  <tr><th>Field</th><th>What to look for</th></tr>
+  <tr><td>Service Name</td><td>The name it was registered under. Random strings and names that imitate Windows components stand out.</td></tr>
+  <tr><td>Service File Name</td><td>The command line the service runs. This is the field that decides the verdict.</td></tr>
+  <tr><td>Service Type</td><td><code>user mode service</code> or <code>kernel mode driver</code>. New drivers deserve their own look.</td></tr>
+  <tr><td>Service Start Type</td><td><code>demand start</code> is typical of tools that run once. <code>auto start</code> means it survives a reboot.</td></tr>
+  <tr><td>Service Account</td><td>Almost always <code>LocalSystem</code>, which is why attackers like services.</td></tr>
+</table></div>
+<p>The event body has no "installed by" field. Event Viewer's <em>User</em> field on the General tab (the <code>Security UserID</code> in the XML) often holds the SID of the account that created it, but don't rely on it alone. The Security log version, <a href="../../events/4697/">Event ID 4697</a>, records the installing account properly if "Audit Security System Extension" is turned on.</p>
+
+<h2>Is Event ID 7045 malicious?</h2>
+<p>Usually not. Software installs, driver updates, backup agents, EDR upgrades and RMM tools all create services. What separates them from an attack is nearly always the <strong>Service File Name</strong>. A real product points at a signed binary under <code>C:\Program Files</code> or <code>C:\Windows\System32</code>. An attack points somewhere temporary, or runs a shell directly.</p>
+<p>Example of a dull one:</p>
+<pre><code>Service Name:      Veeam Agent for Microsoft Windows
+Service File Name: "C:\Program Files\Veeam\Endpoint Backup\Veeam.EndPoint.Service.exe"
+Service Start Type: auto start</code></pre>
+<p>And one you should not close:</p>
+<pre><code>Service Name:      xKqPzTa
+Service File Name: %COMSPEC% /b /c start /b /min powershell -nop -w hidden -enc SQBFAFgAIAAoAE4AZQB3AC0A...
+Service Start Type: demand start</code></pre>
+<p>Treat it as suspicious when the file name contains any of these:</p>
+<ul>
+  <li><code>cmd.exe /c</code>, <code>%COMSPEC%</code>, <code>powershell</code>, <code>-enc</code>, <code>rundll32</code> or <code>mshta</code>. Real services are executables, not one-line scripts.</li>
+  <li>A path in <code>Temp</code>, <code>ProgramData</code>, <code>Users\Public</code> or a user profile.</li>
+  <li>A UNC path such as <code>\\127.0.0.1\ADMIN$\a1b2c3d.exe</code>. Pointing a service at the machine's own admin share is a pattern several attack frameworks use.</li>
+  <li>An executable with a random name dropped straight into <code>C:\Windows</code>.</li>
+</ul>
+<p>If the command is base64-encoded PowerShell, decode it before deciding anything: our guide on <a href="../decode-encoded-powershell/">decoding encoded PowerShell</a> walks through it.</p>
+
+<h2>How does PsExec show up in Event ID 7045?</h2>
+<p>Sysinternals PsExec copies <code>PSEXESVC.exe</code> to the target's <code>ADMIN$</code> share (which is <code>C:\Windows</code>), installs it as a service called <strong>PSEXESVC</strong>, runs the command and removes the service when it finishes. On the target you get a 7045 with the service name <code>PSEXESVC</code> and a file name of <code>%SystemRoot%\PSEXESVC.exe</code>.</p>
+<p>PsExec itself is not malware, and plenty of admins still use it. The question is who ran it, from where, and whether that person normally does. Two things trip people up:</p>
+<ul>
+  <li><strong>The service name can be changed.</strong> PsExec's <code>-r</code> switch sets a different remote service name, so don't build your detection on the string <code>PSEXESVC</code> alone. The binary path, the named pipes and the logon pattern stay much the same.</li>
+  <li><strong>Lookalikes don't say PSEXESVC at all.</strong> Python and framework re-implementations usually register a short random service name and either upload a randomly named executable to <code>ADMIN$</code> or skip the file and put a <code>cmd</code> one-liner in the service path. Short random names on a <code>demand start</code> service are worth more attention than an honest PSEXESVC.</li>
+</ul>
+<p>A useful tip: PsExec writes <code>HKCU\Software\Sysinternals\PsExec\EulaAccepted</code> on the machine it was run <em>from</em>. If you find the source host and that key exists under an unexpected user's profile, you have your operator.</p>
+
+<h2>How do I find where the service came from?</h2>
+<p>Remote service installs need a network logon first, so work backwards from the 7045 time on the target:</p>
+<ol>
+  <li><strong>Event ID 4624, logon type 3</strong>, a few seconds before the 7045. Its <em>Source Network Address</em> is the machine that pushed the service and <em>Account Name</em> is who did it. Our <a href="../windows-logon-types/">Windows logon types guide</a> explains why type 3 is the one to look for.</li>
+  <li><strong>Event ID 5145</strong> (if detailed file share auditing is on) for access to <code>ADMIN$</code> and the <code>svcctl</code> named pipe on <code>IPC$</code>. That is the service control call itself.</li>
+  <li><strong>Process creation</strong> (4688 or Sysmon Event ID 1) with <code>services.exe</code> as the parent. Whatever the service started runs under it, so this shows what it actually did.</li>
+</ol>
+<p>Then pivot to the source host and repeat: what launched PsExec or the tool there, and how did that account get there in the first place.</p>
+
+<h2>Queries to hunt Event ID 7045</h2>
+<p>On a single machine, PowerShell gives you the fields directly:</p>
+<pre><code>Get-WinEvent -FilterHashtable @{LogName='System'; Id=7045} |
+  Select-Object TimeCreated,
+    @{n='Name';  e={$_.Properties[0].Value}},
+    @{n='Path';  e={$_.Properties[1].Value}},
+    @{n='Start'; e={$_.Properties[3].Value}},
+    @{n='Account'; e={$_.Properties[4].Value}}</code></pre>
+<p>In Microsoft Sentinel, System log events land in the <code>Event</code> table:</p>
+<pre><code>Event
+| where TimeGenerated &gt; ago(7d)
+| where EventLog == "System" and EventID == 7045
+| where RenderedDescription has_any ("cmd", "COMSPEC", "powershell", "-enc", "ADMIN$", "\\Temp\\", "ProgramData", "PSEXESVC")
+| project TimeGenerated, Computer, RenderedDescription
+| order by TimeGenerated desc</code></pre>
+<p>Expect some hits from installers that wrap a command in <code>cmd /c</code>. After a week, list the noisy ones by name and path rather than dropping the keyword.</p>
+
+<h2>FAQ</h2>
+<h3>What is the difference between Event ID 7045 and 4697?</h3>
+<p>Both record a new service. 7045 is in the System log and is always written. 4697 is in the Security log, needs "Audit Security System Extension" enabled, and records the account that installed the service. Collect both if you can.</p>
+<h3>Why do I see a 7045 every time someone uses a remote support tool?</h3>
+<p>Many remote support and RMM tools install a temporary service on each connection, just like PsExec. Build an allow list by service name <em>and</em> file path for the tools you actually use, so a renamed copy still alerts.</p>
+<h3>Does a deleted service leave a trace?</h3>
+<p>The 7045 stays in the System log after the service is removed, which is why it is so useful against tools that clean up after themselves. Service Control Manager Event ID 7036 also records the service starting and stopping.</p>
+<h3>Should I alert on new kernel drivers?</h3>
+<p>Yes, at a lower volume threshold than services. Attackers load old, vulnerable signed drivers to switch off security tools. A new driver with an unfamiliar name, especially from a user or temp folder, should be checked against the publisher and Microsoft's vulnerable driver blocklist.</p>
+    <div class="next">
+      <div><b>Check every new service in an export at once</b><p>Windows Event Triage flags new services, PsExec-style names, encoded PowerShell and log clearing in your exported events, in your browser.</p></div>
+      <a class="btn btn-primary" href="../../event-triage/">Open Event Triage</a>
+    </div>
+    <div class="next">
+      <div><b>Got the source IP that pushed the service?</b><p>IOC Triage, our free browser extension: right-click the IP for a verdict from 15 threat-intel sources, including abuse reports and hosting provider, then copy a ticket note.</p></div>
+      <a class="btn btn-ghost" href="https://chromewebstore.google.com/detail/dncgneacahomieionjkaofmfnojlkfmc?utm_source=tools.opsvantage.net&amp;utm_medium=guide&amp;utm_campaign=event-id-7045-new-service">Add IOC Triage to Chrome</a>
+    </div>
+  </article>
+<!--/email_off--></main>
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../../">All tools</a> · <a href="../../guides/">Guides</a> · <a href="../../privacy/">Privacy &amp; terms</a> · <a href="../../how-it-works/">How it works</a> · <a href="../../changelog/">Changelog</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../../assets/hub.js?v=202611161442"></script>
+</body>
+</html>
