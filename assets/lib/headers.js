@@ -109,7 +109,8 @@
     if (A && display && fromDom) {
       const low = display.toLowerCase();
       for (const b of A.BRANDS) {
-        if (b.keywords.some((k) => k.length > 3 && low.includes(k)) && !A.hostInList(fromDom, b.domains)) {
+        if (b.keywords.some((k) => k.length > 3 && low.includes(k)) && !A.hostInList(fromDom, b.domains) &&
+          !(A.isBrandCountryDomain && A.isBrandCountryDomain(fromDom, b))) {
           brandSpoof = true;
           add(25, `Display name says "${display}" (${b.name}) but the sender domain is ${fromDom}`); break;
         }
