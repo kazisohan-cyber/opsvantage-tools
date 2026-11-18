@@ -116,4 +116,5 @@
   <url><loc>https://tools.opsvantage.net/error-codes/</loc><lastmod>2026-11-16</lastmod></url>
   <url><loc>https://tools.opsvantage.net/timestamp-converter/</loc><lastmod>2026-11-16</lastmod></url>
   <url><loc>https://tools.opsvantage.net/lookalike-domains/</loc><lastmod>2026-11-16</lastmod></url>
+  <url><loc>https://tools.opsvantage.net/guides/rotate-dkim-2048-m365/</loc><lastmod>2026-11-18</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
 </urlset>

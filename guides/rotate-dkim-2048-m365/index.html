@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rotate DKIM keys to 2048-bit in Microsoft 365 (step by step) | OpsVantage Tools</title>
+<meta name="description" content="How to rotate DKIM keys to 2048-bit in Microsoft 365: check the key size, run the rotation in PowerShell, wait out the 4-day switch and verify both selectors.">
+<link rel="canonical" href="https://tools.opsvantage.net/guides/rotate-dkim-2048-m365/">
+<meta name="theme-color" content="#0A0D18">
+<link rel="icon" type="image/png" href="../../assets/logo.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Rotate DKIM keys to 2048-bit in Microsoft 365 (step by step)">
+<meta property="og:description" content="How to rotate DKIM keys to 2048-bit in Microsoft 365: check the key size, run the rotation in PowerShell, wait out the 4-day switch and verify both selectors.">
+<meta property="og:url" content="https://tools.opsvantage.net/guides/rotate-dkim-2048-m365/">
+<meta property="og:image" content="https://tools.opsvantage.net/assets/media/home-og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://tools.opsvantage.net/assets/media/home-og.jpg">
+<script src="../../assets/theme.js?v=202611182202"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/hub.css?v=202611182202">
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "Rotate DKIM keys to 2048-bit in Microsoft 365 (step by step)",
+    "description": "How to rotate DKIM keys to 2048-bit in Microsoft 365: check the key size, run the rotation in PowerShell, wait out the 4-day switch and verify both selectors.",
+    "url": "https://tools.opsvantage.net/guides/rotate-dkim-2048-m365/",
+    "datePublished": "2026-11-18",
+    "dateModified": "2026-11-18",
+    "inLanguage": "en",
+    "author": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "OpsVantage",
+      "url": "https://opsvantage.net/"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Will rotating DKIM keys interrupt mail flow?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. Both selectors stay published during the switch, so mail signed with the old key still verifies while it is in transit or sitting in queues. Receivers simply look up whichever selector the message names."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I use a 4096-bit DKIM key in Microsoft 365?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. Microsoft 365 supports 1024 and 2048 bits for DKIM. 2048 is also the practical ceiling for most senders, because longer keys are awkward in DNS and some receivers handle them poorly."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does the onmicrosoft.com domain need rotating?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Microsoft manages DKIM for the initial onmicrosoft.com domain, and you have no DNS for it to publish. Focus on your custom domains, which are what DMARC alignment and external scans care about."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How often should I rotate DKIM keys after this?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Once or twice a year is a common rhythm, and many security baselines ask for a scheduled rotation. In Microsoft 365 the private key never leaves Microsoft, so routine rotation is housekeeping rather than an emergency; just remember each one takes about four days to switch over."
+        }
+      }
+    ]
+  }
+]
+</script>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="../../"><img src="../../assets/logo.png" alt="" width="28" height="28"><span>Ops<b>Vantage</b> Tools</span></a>
+    <div class="nav-right">
+      <a class="link opt" href="../../#tools">Tools</a>
+      <a class="link opt" href="../../guides/">Guides</a>
+      <a class="link opt" href="../../events/">Event IDs</a>
+      <a class="link wide" href="https://opsvantage.net/">opsvantage.net</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle light or dark theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main class="wrap"><!--email_off-->
+  <article class="article">
+    <div class="tool-head">
+      <div class="crumbs"><a href="../../">Tools</a> / <a href="../">Guides</a> / DKIM 2048-bit in M365</div>
+      <h1>Rotate DKIM keys to <em>2048-bit in Microsoft 365</em></h1>
+      <p class="lead">How to rotate DKIM keys to 2048-bit in Microsoft 365: check the key size, run the rotation in PowerShell, wait out the 4-day switch and verify both selectors.</p>
+      <div class="meta-line">Updated 2026-11-18 · 7 min read</div>
+    </div>
+<p>The email security review came back with one amber line: "DKIM key is 1024-bit". The domain passes DKIM, DMARC is enforced, mail flows, and now someone wants it fixed before the next audit. The good news is that you can rotate DKIM keys to 2048-bit in Microsoft 365 without touching DNS and without a mail outage. The catch is timing: each rotation takes about four days to take effect, and a full upgrade needs two of them.</p>
+<p>Here is how to check where you stand, run the rotation, and confirm it worked from the outside.</p>
+
+<h2>Why is my Microsoft 365 DKIM key still 1024-bit?</h2>
+<p>Older tenants enabled custom-domain DKIM when 1024-bit was Microsoft's default, and a key never changes size on its own. Enabling DKIM again or toggling it off and on does not upgrade it. Only a rotation with an explicit key size does.</p>
+<p>A 1024-bit RSA key is not broken in practice today, but it is below what most current guidance recommends, and auditors and scanners flag it. Since the upgrade costs nothing but a few days of waiting, there is little reason to argue about it.</p>
+
+<h2>How do I check the current DKIM key size?</h2>
+<p>Connect to Exchange Online PowerShell and look at the signing config for the domain:</p>
+<pre><code>Connect-ExchangeOnline
+Get-DkimSigningConfig -Identity contoso.com |
+  Format-List Domain, Enabled, Selector1KeySize, Selector2KeySize,
+              Selector1CNAME, Selector2CNAME, RotateOnDate,
+              SelectorBeforeRotateOnDate, SelectorAfterRotateOnDate</code></pre>
+<p>Read it this way:</p>
+<ul>
+  <li><strong>Selector1KeySize / Selector2KeySize</strong>: the size of each key. You want both at 2048.</li>
+  <li><strong>SelectorAfterRotateOnDate</strong>: the selector Microsoft signs with after the <code>RotateOnDate</code>. If that date is in the past, this is the active selector right now.</li>
+  <li><strong>Enabled</strong>: must be <code>True</code>. If DKIM is not enabled for the custom domain, mail is being signed with the onmicrosoft.com domain instead, which does not align with DMARC. Fix that first.</li>
+</ul>
+<p>Run <code>Get-DkimSigningConfig</code> without <code>-Identity</code> to list every accepted domain at once. Tenants with a dozen brand domains often have a mix of key sizes, and you want the whole list before you start.</p>
+
+<h2>How do I rotate DKIM keys to 2048-bit in Microsoft 365?</h2>
+<p>Microsoft 365 keeps two selectors per domain. One signs mail; the other sits ready. A rotation generates a new key on the <strong>inactive</strong> selector, then switches signing to it after roughly four days (Microsoft documents up to 96 hours). The old selector stays published, so messages already in transit still verify.</p>
+<p>Before you rotate, check that both CNAME records exist in your public DNS. The values to publish are in the <code>Selector1CNAME</code> and <code>Selector2CNAME</code> fields. If only selector1 was ever published, the rotation will move signing to a selector receivers cannot look up, and DKIM will start failing.</p>
+<pre><code>Resolve-DnsName selector1._domainkey.contoso.com -Type CNAME
+Resolve-DnsName selector2._domainkey.contoso.com -Type CNAME</code></pre>
+<p>Then rotate with the key size stated explicitly:</p>
+<pre><code>Rotate-DkimSigningConfig -Identity contoso.com -KeySize 2048</code></pre>
+<p>You can also rotate from the Defender portal (Email &amp; collaboration &gt; Policies &amp; rules &gt; Threat policies &gt; Email authentication settings &gt; DKIM, select the domain, then <strong>Rotate DKIM keys</strong>). PowerShell is the better choice here because the command states the key size and leaves no doubt about what you asked for.</p>
+
+<h3>Why one rotation is not enough</h3>
+<p>This is the step people miss. The first rotation upgrades only the selector that was inactive. After four days you are signing with a 2048-bit key, but the other selector still holds the old 1024-bit key. Run the same command a second time once the first switch has happened, wait another four days, and both selectors end up at 2048.</p>
+<div class="table-wrap"><table>
+  <tr><th>Day</th><th>Action</th><th>Signing with</th><th>Selector state</th></tr>
+  <tr><td>0</td><td>First <code>Rotate-DkimSigningConfig -KeySize 2048</code></td><td>selector1 (1024)</td><td>selector2 now holds a 2048 key</td></tr>
+  <tr><td>~4</td><td>Switch happens automatically</td><td>selector2 (2048)</td><td>selector1 still 1024</td></tr>
+  <tr><td>~4</td><td>Second rotation</td><td>selector2 (2048)</td><td>selector1 gets a new 2048 key</td></tr>
+  <tr><td>~8</td><td>Switch happens automatically</td><td>selector1 (2048)</td><td>Both at 2048</td></tr>
+</table></div>
+<p>Your selectors may be the other way round; the logic is the same. If you stop after one rotation, the next external scan of selector1 will still report 1024-bit and the audit item comes back.</p>
+
+<h2>Do I need to change DNS records for a 2048-bit DKIM key?</h2>
+<p>No, as long as the CNAMEs are already in place. In Microsoft 365 your selector records are CNAMEs that point at a hostname Microsoft controls, and the public key lives there. Microsoft publishes the new key behind the same CNAME, so nothing in your zone changes.</p>
+<p>This is different from self-hosted or some third-party senders, where you publish the TXT record yourself. A 2048-bit key is longer than the 255-character limit of a single DNS string, so it has to be split into several quoted strings inside one TXT record. If you ever copy a key into a DNS host by hand and DKIM starts failing, that is the first thing to check.</p>
+
+<h2>How do I confirm the rotation worked?</h2>
+<p>Check in three places, because each one answers a different question:</p>
+<ol>
+  <li><strong>The config.</strong> Run <code>Get-DkimSigningConfig</code> again. Both key sizes should read 2048, and <code>RotateOnDate</code> should be in the past.</li>
+  <li><strong>DNS, from outside.</strong> Look up both selectors and compare the length of the <code>p=</code> value. A 1024-bit RSA key is about 216 base64 characters; a 2048-bit key is about 392. You do not need to decode it to tell them apart.</li>
+  <li><strong>A real message.</strong> Send a mail to an external mailbox and open the headers. The <code>DKIM-Signature</code> line shows <code>d=contoso.com</code> and <code>s=selector1</code> or <code>s=selector2</code>, and <code>Authentication-Results</code> should show <code>dkim=pass</code> with <code>header.d=contoso.com</code>. If you are not used to reading these, see <a href="../read-email-headers/">how to read email headers</a>.</li>
+</ol>
+<pre><code>Resolve-DnsName selector2._domainkey.contoso.com -Type TXT |
+  Select-Object -ExpandProperty Strings</code></pre>
+<p>The DNS check matters most for audits, because that is what external scanners see. The header check is what proves receivers are actually verifying the new key.</p>
+
+<h2>Where this usually goes wrong</h2>
+<ul>
+  <li><strong>Only one rotation.</strong> Covered above, and by far the most common.</li>
+  <li><strong>Rushing the second rotation.</strong> Running it again before the first switch has happened will not get you there faster. Check that <code>RotateOnDate</code> is in the past and that the active selector has changed before each run.</li>
+  <li><strong>Missing selector2 CNAME.</strong> Domains set up years ago sometimes have only one record published. Rotation then breaks DKIM for that domain.</li>
+  <li><strong>Forgetting the other senders.</strong> Microsoft 365 is only one of your DKIM keys. Marketing, CRM and ticketing platforms each sign with their own selector and key size, and the audit will check those too.</li>
+</ul>
+<p>If DKIM is the reason you are holding DMARC at <code>p=none</code>, this is a good moment to finish that job as well: <a href="../dmarc-none-to-reject/">moving DMARC from p=none to p=reject</a> walks through it.</p>
+
+<h2>FAQ</h2>
+<h3>Will rotating DKIM keys interrupt mail flow?</h3>
+<p>No. Both selectors stay published during the switch, so mail signed with the old key still verifies while it is in transit or sitting in queues. Receivers simply look up whichever selector the message names.</p>
+<h3>Can I use a 4096-bit DKIM key in Microsoft 365?</h3>
+<p>No. Microsoft 365 supports 1024 and 2048 bits for DKIM. 2048 is also the practical ceiling for most senders, because longer keys are awkward in DNS and some receivers handle them poorly.</p>
+<h3>Does the onmicrosoft.com domain need rotating?</h3>
+<p>Microsoft manages DKIM for the initial onmicrosoft.com domain, and you have no DNS for it to publish. Focus on your custom domains, which are what DMARC alignment and external scans care about.</p>
+<h3>How often should I rotate DKIM keys after this?</h3>
+<p>Once or twice a year is a common rhythm, and many security baselines ask for a scheduled rotation. In Microsoft 365 the private key never leaves Microsoft, so routine rotation is housekeeping rather than an emergency; just remember each one takes about four days to switch over.</p>
+    <div class="next">
+      <div><b>See the key size on both selectors</b><p>The SPF, DKIM &amp; DMARC Checker looks up selector1 and selector2 for Microsoft 365, shows each key's length and flags anything under 2048 bits.</p></div>
+      <a class="btn btn-primary" href="../../dmarc-checker/">Check my DKIM</a>
+    </div>
+    <div class="next">
+      <div><b>Handling phishing reports from users?</b><p>IOC Triage, our free browser extension, checks the sender domain, links and attachment hashes in a reported email and copies a reply for the reporter.</p></div>
+      <a class="btn btn-ghost" href="https://chromewebstore.google.com/detail/dncgneacahomieionjkaofmfnojlkfmc?utm_source=tools.opsvantage.net&amp;utm_medium=guide&amp;utm_campaign=rotate-dkim-2048-m365">Add IOC Triage to Chrome</a>
+    </div>
+  </article>
+<!--/email_off--></main>
+<footer>
+  <div class="wrap row">
+    <span>© <span id="year">2026</span> OpsVantage. Tools are provided as-is; verify findings before acting on them.</span>
+    <span><a href="../../">All tools</a> · <a href="../../guides/">Guides</a> · <a href="../../privacy/">Privacy &amp; terms</a> · <a href="../../how-it-works/">How it works</a> · <a href="../../changelog/">Changelog</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
+  </div>
+</footer>
+<script src="../../assets/hub.js?v=202611182202"></script>
+</body>
+</html>

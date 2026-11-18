@@ -17,11 +17,11 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://tools.opsvantage.net/assets/media/home-og.jpg">
-<script src="../../assets/theme.js?v=202611161812"></script>
+<script src="../../assets/theme.js?v=202611182202"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../../assets/hub.css?v=202611161812">
+<link rel="stylesheet" href="../../assets/hub.css?v=202611182202">
 <script type="application/ld+json">
 [
   {
@@ -155,7 +155,7 @@
   <li>Change SPF from <code>~all</code> to <code>-all</code> once every sender is listed.</li>
   <li>Make sure <code>sp=</code> (subdomain policy) is not <code>none</code>, or attackers simply spoof <code>billing.example.com</code>.</li>
   <li>Lock down domains that never send mail: <code>v=spf1 -all</code> and <code>v=DMARC1; p=reject</code>. Parked domains are favourite spoofing targets.</li>
-  <li>Rotate DKIM keys to 2048-bit if any are still 1024-bit.</li>
+  <li>Rotate DKIM keys to 2048-bit if any are still 1024-bit (<a href="../rotate-dkim-2048-m365/">how to do it in Microsoft 365</a>).</li>
 </ul>
 
 <h2>Common mistakes</h2>
@@ -191,6 +191,6 @@
     <span><a href="../../">All tools</a> · <a href="../../guides/">Guides</a> · <a href="../../privacy/">Privacy &amp; terms</a> · <a href="../../how-it-works/">How it works</a> · <a href="../../changelog/">Changelog</a> · <a href="https://opsvantage.net/">opsvantage.net</a></span>
   </div>
 </footer>
-<script src="../../assets/hub.js?v=202611161812"></script>
+<script src="../../assets/hub.js?v=202611182202"></script>
 </body>
 </html>
